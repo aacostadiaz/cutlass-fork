@@ -29,6 +29,6 @@
 
 
 cutlass_example_add_executable(
-  14_ampere_tf32_tensorop_gemm
-  ampere_tf32_tensorop_gemm.cu
+  02_pvc_bfloat_dpas_gemm_cute
+  pvc_bfloat_dpas_gemm_cute.cpp
 )

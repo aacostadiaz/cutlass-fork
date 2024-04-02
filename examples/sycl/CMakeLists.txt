@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 - 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 - 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-cutlass_example_add_executable(
-  14_ampere_tf32_tensorop_gemm
-  ampere_tf32_tensorop_gemm.cu
-)
+add_subdirectory(00_ampere_tf32_tensorop_gemm)
+add_subdirectory(01_ampere_tf32_tensorop_gemm_relu)
+add_subdirectory(02_pvc_bfloat_dpas_gemm)

@@ -182,7 +182,9 @@ pretty_print(half_t const& v) {
 
 CUTE_HOST_DEVICE void
 pretty_print(float const& v) {
-  printf("%*.2e", 10, v);
+//  printf("%*.2e", 10, v);
+  printf("%*d", 5, (int32_t )v);
+
 }
 
 CUTE_HOST_DEVICE void

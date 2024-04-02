@@ -404,7 +404,8 @@ public:
 #if defined(CUTLASS_ENABLE_SYCL)
         const auto sycl_block = syclcompat::dim3(block.x, block.y, block.z);
         const auto sycl_grid = syclcompat::dim3(grid.x, grid.y, grid.z);
-
+        printf("block %i %i %i\n", block.x, block.y, block.z);
+        printf("grid %i %i %i\n", grid.x, grid.y, grid.z);
         syclcompat::launch<device_kernel<GemmKernel>>(sycl_grid, sycl_block, smem_size, params);
 #else
         device_kernel<GemmKernel><<<grid, block, smem_size, stream>>>(params);
