@@ -44,6 +44,8 @@
 #include <cute/layout.hpp>
 #include <cute/tile.hpp>
 
+#include <iomanip>
+
 namespace cute
 {
 

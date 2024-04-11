@@ -39,23 +39,82 @@
 
 #include <cute/tensor.hpp>
 
+float threshold = 0.01f;
+
+template <typename T>
+static void vnni_matrix(
+    std::vector<T> &dst, const std::vector<T> &src,
+    size_t numRows, size_t numCols, size_t factor)
+{
+    for (size_t r = 0; r < numRows / factor; r++) {
+        for (size_t c = 0; c < numCols; c++) {
+            for (size_t k = 0; k < factor; k++) {
+                dst[r * numCols * factor + c * factor + k] =
+                    src[(r * factor + k) * numCols + c];
+            }
+        }
+    }
+}
+
+template <typename DstT, typename SrcT>
+static void compute_reference(
+    std::vector<DstT>& C,
+    const std::vector<SrcT>& A, const std::vector<SrcT>& B,
+    size_t M, size_t N, size_t K)
+{
+    for (size_t m = 0; m < M; m++) {
+        for (size_t n = 0; n < N; n++) {
+            DstT sum = 0;
+            for (size_t k = 0; k < K; k++) {
+                sum = std::fma(static_cast<DstT>(A[m * K + k]),
+                               static_cast<DstT>(B[k * N + n]), sum);
+            }
+            C[m * N + n] = sum;
+        }
+    }
+}
+
+template <typename T>
+bool check_results(
+    size_t M,
+    size_t N,
+    const std::vector<T>& C,
+    const std::vector<T>& C_ref)
+{
+    float err = 0.f;
+    for (size_t m = 0; m < M; m++) {
+        for (size_t n = 0; n < N; n++) {
+            auto index = m * N + n;
+            auto localErr = std::fabs(C[index] - C_ref[index]) /
+                            std::max(std::fabs(C[index]),
+                                    std::fabs(C_ref[index]));
+            err = std::max(localErr, err);
+            if (localErr >= threshold) {
+                std::cerr << "Error at m = " << m << ", n = " << n
+                          << ": (local error " << localErr << "): Wanted "
+                          << C_ref[index] << ", got " << C[index] << std::endl;
+                // return false;
+            }
+        }
+    }
+  return true;
+}
+
 using namespace cute;
 
 // The code section below describes datatype for input, output matrices and computation between
 // elements in input matrices.
 using ElementAccumulator = float;                   // <- data type of accumulator
 using ElementComputeEpilogue = float;  // <- data type of epilogue operations
-using ElementInputA = float;                        // <- data type of elements in input matrix A
-using ElementInputB = float;                        // <- data type of elements in input matrix B
+using ElementInputA = bfloat16_t;                        // <- data type of elements in input matrix A
+using ElementInputB = bfloat16_t;                        // <- data type of elements in input matrix B
 using ElementOutput = float;                        // <- data type of elements in output matrix D
 
-using TileShape = Shape<_128, _128, _16>;
+using TileShape = Shape<_64, _64, _16>;
 
-using TiledMma = TiledMMA<
-        MMA_Atom<UniversalFMA<ElementAccumulator, ElementInputA, ElementInputB>>,
+using TiledMma = TiledMMA<MMA_Atom<XE_8x16x16_BF16BF16F32F32_NN>,
         Layout<Shape<_8,_16,_1>>>;
-
-using GmemTiledCopyA = decltype(
+/*using GmemTiledCopyA = decltype(
 make_tiled_copy(Copy_Atom<UniversalCopy<uint32_t>, ElementInputA>{},
                 Layout<Shape <_1, _1>>{},
                 Layout<Shape<_8,_16>>{}));
@@ -64,7 +123,7 @@ make_tiled_copy(Copy_Atom<UniversalCopy<uint32_t>, ElementInputA>{},
 using GmemTiledCopyB = decltype(
 make_tiled_copy(Copy_Atom<UniversalCopy<uint32_t>, ElementInputB>{},
                 Layout<Shape <_1, _1>>{},
-                Layout<Shape<_8,_16>>{}));
+                Layout<Shape<_16,_16>>{}));*/
 
 //// This code section describes the epilogue part of the kernel
 using EpilogueOp = cutlass::epilogue::thread::LinearCombination<
@@ -91,27 +150,32 @@ void test_gemm(int m, int n, int k)
   std::cout << "N = " << n << std::endl;
   std::cout << "K = " << k << std::endl;
 
-  using TA = float;
-  using TB = float;
+  using TA = bfloat16_t;
+  using TB = bfloat16_t;
   using TC = float;
   using TI = float;
 
   std::vector<TA> h_A(m*k);
   std::vector<TB> h_B(n*k);
+  std::vector<TB> h_B_vnni(n*k);
   std::vector<TC> h_C(m*n);
+  std::vector<TC> h_D(m*n);
 
-  for (int j = 0; j < m*k; ++j) h_A[j] = static_cast<TA>( j );
-  for (int j = 0; j < n*k; ++j) h_B[j] = static_cast<TB>( j );
-//  for (int j = 0; j < m*k; ++j) h_A[j] = static_cast<TA>( 2*(rand() / double(RAND_MAX)) - 1 );
-//  for (int j = 0; j < n*k; ++j) h_B[j] = static_cast<TB>( 2*(rand() / double(RAND_MAX)) - 1 );
-  for (int j = 0; j < m*n; ++j) h_C[j] = static_cast<TC>(-1);
+  // for (int j = 0; j < m*k; ++j) h_A[j] = static_cast<TA>( j );
+  // for (int j = 0; j < n*k; ++j) h_B[j] = static_cast<TB>( j );
+  for (int j = 0; j < m*k; ++j) h_A[j] = static_cast<TA>( 2*(rand() / double(RAND_MAX)) - 1 );
+  for (int j = 0; j < n*k; ++j) h_B[j] = static_cast<TB>( 2*(rand() / double(RAND_MAX)) - 1 );
+  for (int j = 0; j < m*n; ++j) h_C[j] = static_cast<TC>(0);
+  for (int j = 0; j < m*n; ++j) h_D[j] = static_cast<TC>(-1);
+
+  vnni_matrix(h_B_vnni, h_B, n, k, 2);
 
   auto d_A = syclcompat::malloc<TA>(m*k);
-  auto d_B = syclcompat::malloc<TA>(n*k);
-  auto d_C = syclcompat::malloc<TA>(m*n);
+  auto d_B = syclcompat::malloc<TB>(n*k);
+  auto d_C = syclcompat::malloc<TC>(m*n);
 
   syclcompat::memcpy<TA>(d_A, h_A.data(), h_A.size());
-  syclcompat::memcpy<TB>(d_B, h_B.data(), h_B.size());
+  syclcompat::memcpy<TB>(d_B, h_B_vnni.data(), h_B_vnni.size());
   syclcompat::memcpy<TC>(d_C, h_C.data(), h_C.size());
 
   TI alpha = 1.0;
@@ -119,7 +183,7 @@ void test_gemm(int m, int n, int k)
 
   double tflops = (2.0*m*n*k) * 1e-12;
 
-  const int timing_iterations = 1;
+  const int timing_iterations = 10;
   GPU_Clock timer;
 
   //
@@ -132,6 +196,9 @@ void test_gemm(int m, int n, int k)
   auto dA = make_stride(Int<1>{}, m, Int<1>{});
   auto dB = make_stride(Int<1>{}, n, Int<1>{});
   auto dC = make_stride(Int<1>{}, m, Int<1>{});
+
+  using GmemTiledCopyA = decltype(make_xe_2d_copy(make_tensor(make_gmem_ptr(d_A), make_shape(m, k))));
+  using GmemTiledCopyB = decltype(make_xe_2d_copy(make_tensor(make_gmem_ptr(d_B), make_shape(k, n))));
 
   using CollectiveEpilogue = cutlass::epilogue::collective::DefaultEpilogue<
           decltype(dC),
@@ -196,8 +263,16 @@ void test_gemm(int m, int n, int k)
   // Run once (and check)
   run(gemm_op);
   CUTE_CHECK_LAST();
-  syclcompat::memcpy<TC>(d_C, h_C.data(), h_C.size());
-
+  syclcompat::wait();
+  syclcompat::memcpy<TC>(h_C.data(), d_C, h_C.size());
+  printf("Computing Reference\n");
+  compute_reference(h_D, h_A, h_B, m, n, k);
+  check_results(m, n, h_D, h_C);
+  if(true) {
+    printf("Incorrect output\n");
+    return;
+  }
+  printf("Correct output\n");
   // Timing iterations
   timer.start();
   for (int i = 0; i < timing_iterations; ++i) {
@@ -210,15 +285,15 @@ void test_gemm(int m, int n, int k)
 
 int main(int argc, char** argv)
 {
-  int m = 4096;
+  int m = 64;
   if (argc >= 2)
     sscanf(argv[1], "%d", &m);
 
-  int n = 4096;
+  int n = 64;
   if (argc >= 3)
     sscanf(argv[2], "%d", &n);
 
-  int k = 4096;
+  int k = 64;
   if (argc >= 4)
     sscanf(argv[3], "%d", &k);
 

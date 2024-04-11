@@ -39,6 +39,8 @@
 #include <cute/tensor.hpp>
 #include <cute/util/type_traits.hpp>
 
+#include <cute/atom/mma_traits_xe.hpp>
+
 namespace cute {
 
 template <class... Args>

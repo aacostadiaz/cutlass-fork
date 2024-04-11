@@ -874,7 +874,7 @@ struct SM90_TMA_STORE_IM2COL
 };
 
 // Indicate arrival of warp issuing TMA_STORE
-CUTE_HOST_DEVICE static void
+static void
 tma_store_arrive() {
 #if defined(CUTE_ARCH_TMA_SM90_ENABLED)
     asm volatile("cp.async.bulk.commit_group;");
@@ -885,7 +885,7 @@ tma_store_arrive() {
 
 // Wait until at most Count committed TMA_STOREs are pending and all prior commits are complete
 template <int Count>
-CUTE_HOST_DEVICE static void
+static void
 tma_store_wait() {
 #if defined(CUTE_ARCH_TMA_SM90_ENABLED)
     asm volatile(
