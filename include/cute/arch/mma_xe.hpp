@@ -32,7 +32,6 @@ struct XE_8x16x16_BF16BF16F32F32_NN
       int8   const& b,
       float8 const& c)
   {
-    sycl::ext::oneapi::experimental::printf("fma\n");
     d = intel_sub_group_bf16_bf16_matrix_mad_k16(a, b, c);
   }
 };
