@@ -99,7 +99,7 @@ public:
   // MSVC requires the cast to fix a warning-as-error.
   static constexpr int SharedStorageSize = 0;
 
-  static constexpr uint32_t MaxThreadsPerBlock = 64;
+  static constexpr uint32_t MaxThreadsPerBlock = 16;
   // static constexpr uint32_t MaxThreadsPerBlock = CUTE_STATIC_V(cute::size(TiledMma{}));
   static constexpr uint32_t MinBlocksPerMultiprocessor = 1;
   static constexpr int SG_SZ = 16;
@@ -207,8 +207,8 @@ public:
     // * pass these co-ordinates along to the blk_coord_mnkl object
     constexpr int tM = 8;
     constexpr int tN = 16;
-    const int total_sg = (GridDimX() * GridDimY()) / SG_SZ;
-    constexpr int num_sg = MaxThreadsPerBlock / SG_SZ;
+    constexpr int tK = 16;
+    constexpr int num_sg = MaxThreadsPerBlock / SG_SZ; // sub_groups per work group
     constexpr int MM = 4;//get<0>(blk_shape) / (num_sg * tM/*get<0>(shape(typename TiledMma::LayoutA_TV{}))*/); // A frags per sub_group
     constexpr int NN = 2;//get<1>(blk_shape) / (num_sg * tN/*get<1>(shape(typename TiledMma::LayoutB_TV{}))*/); // B frags per sub_group
     const int frags_sg_m_ = (M - 1) / tM/*get<0>(shape(typename TiledMma::LayoutA_TV{}))*/ + 1; // total fragments of A
@@ -228,39 +228,39 @@ public:
     auto blk_coord_mnkl = make_coord(m_coord, n_coord, _, l_coord);                                        // (m,n,k,l)
 
     // Represent the full tensors
-    Tensor mA_mkl = make_tensor(make_gmem_ptr(params.mainloop.ptr_A), make_shape(M,K,L), params.mainloop.dA); //(m,k,l)
-    Tensor mB_nkl = make_tensor(make_gmem_ptr(params.mainloop.ptr_B), make_shape(N,K,L), params.mainloop.dB); //(n,k,l)
+    // Tensor mA_mkl = make_tensor(make_gmem_ptr(params.mainloop.ptr_A), make_shape(M,K,L), params.mainloop.dA); //(m,k,l)
+    // Tensor mB_nkl = make_tensor(make_gmem_ptr(params.mainloop.ptr_B), make_shape(N,K,L), params.mainloop.dB); //(n,k,l)
 
     // Get batch slice
-    Tensor mA_mk = mA_mkl(_,_,l_coord);                                                                        // (m,k)
-    Tensor mB_nk = mB_nkl(_,_,l_coord);                                                                        // (n,k)
+    // Tensor mA_mk = mA_mkl(_,_,l_coord);                                                                        // (m,k)
+    // Tensor mB_nk = mB_nkl(_,_,l_coord);                                                                        // (n,k)
 
     // auto sg_shape = make_shape(MM * get<0>(shape(typename TiledMma::LayoutA_TV{})), NN * get<1>(shape(typename TiledMma::LayoutB_TV{})), get<2>(blk_shape));
     // auto sg_shape = make_shape(Int<MM>{} * 8, Int<NN>{} * 16, Int<16>{});
     using sg_shape = Shape<_32, _16, _16>;
     // Slice to get the tiles this thread block is responsible for
-    Tensor gA = local_tile(mA_mk, sg_shape{}, take<0,3>(blk_coord_mnkl), Step<_1, X,_1>{});           // (BLK_M,BLK_K,k)
-    Tensor gB = local_tile(mB_nk, sg_shape{}, take<0,3>(blk_coord_mnkl), Step<X, _1,_1>{});           // (BLK_N,BLK_K,k)
+    // Tensor gA = local_tile(mA_mk, sg_shape{}, take<0,3>(blk_coord_mnkl), Step<_1, X,_1>{});           // (BLK_M,BLK_K,k)
+    // Tensor gB = local_tile(mB_nk, sg_shape{}, take<0,3>(blk_coord_mnkl), Step<X, _1,_1>{});           // (BLK_N,BLK_K,k)
 
     Tensor tAi = make_tensor(make_inttuple_iter(m_coord, 0), make_layout(make_shape(_1{}, Int<MM>{}, K), make_stride(_1{}, tM*E<0>{}, E<1>{})));
     Tensor tBi = make_tensor(make_inttuple_iter(0, n_coord), make_layout(make_shape(_1{}, K, Int<NN>{}), make_stride(_1{}, E<0>{}, tN*E<1>{})));
     Tensor tCi = make_tensor(make_inttuple_iter(m_coord, n_coord), make_layout(Shape<_1, Int<MM>, Int<NN>>{}, make_stride(_1{}, tM*E<0>{}, tN*E<1>{})));
 
     // Compute tile residues for predication
-    auto m_max_coord = M - size<0>(gA) * get<0>(blk_coord_mnkl);                             // M - BLK_M * m_coord
-    auto n_max_coord = N - size<0>(gB) * get<1>(blk_coord_mnkl);                             // N - BLK_N * n_coord
-    auto k_residue   = K - size<1>(gA) * size<2>(gA);                                        // K - BLK_K * k_coord_max
+    auto m_max_coord = M - get<0>(blk_shape) * m_coord;//size<0>(gA) * get<0>(blk_coord_mnkl);                             // M - BLK_M * m_coord
+    auto n_max_coord = N - get<1>(blk_shape) * n_coord;//size<0>(gB) * get<1>(blk_coord_mnkl);                             // N - BLK_N * n_coord
+    auto k_residue   = K - get<2>(blk_shape) * (K / get<2>(blk_shape));//size<1>(gA) * size<2>(gA);                                        // K - BLK_K * k_coord_max
     auto residue_mnk = make_tuple(m_max_coord, n_max_coord, k_residue);
 
     // Allocate the tiled_mma and the accumulators for the (M,N) blk_shape
     TiledMma tiled_mma;
     // Tensor accumulators = partition_fragment_C(tiled_mma, take<0,2>(sg_shape{})); // (MMA,MMA_M,MMA_N)
-    Tensor accumulators = make_tensor<float>(Shape<_8, Int<4>, Int<2>>{});
+    Tensor accumulators = make_tensor<float>(Shape<_8, Int<MM>, Int<NN>>{});
     // Tensor output = make_tensor<float>(make_gmem_ptr(params.epilogue.ptr_C), make_layout(Shape<_8, Int<4>, Int<2>>{}));
     clear(accumulators);
 
-    auto k_tile_iter  = cute::make_coord_iterator(shape<2>(gA));
-    int  k_tile_count = size<2>(gA);
+    auto k_tile_iter  = cute::make_coord_iterator(make_shape(K / get<2>(blk_shape))/*shape<2>(gA)*/);
+    int  k_tile_count = K / get<2>(blk_shape);//size<2>(gA);
 
     // Perform the collective scoped MMA
     CollectiveMainloop collective_mma;
@@ -272,9 +272,10 @@ public:
       k_tile_iter, k_tile_count,
       residue_mnk,
       thread_idx,
-      smem_buf
+      smem_buf,
+      params.mainloop
     );
-    auto gmem_tiled_copy_c = make_xe_2d_copy(make_tensor(make_gmem_ptr(params.epilogue.ptr_D), make_shape(M, N)));
+    auto gmem_tiled_copy_c = make_xe_2d_copy<XE_2D_SAVE>(make_tensor(params.epilogue.ptr_D, make_shape(M, N)));
     copy(gmem_tiled_copy_c, accumulators, tCi);
 
     // Epilogue and write to gD

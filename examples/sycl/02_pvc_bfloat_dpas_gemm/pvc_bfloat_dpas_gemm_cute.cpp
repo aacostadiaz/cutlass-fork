@@ -38,8 +38,40 @@
 #include "cutlass/util/GPU_Clock.hpp"
 
 #include <cute/tensor.hpp>
+#include <random>
 
+bool identityData = false;
+bool fixedData = true;
+bool validate = true;
 float threshold = 0.01f;
+
+template <typename T>
+static void fill_matrix(std::vector<T> &M, size_t numRows, size_t numCols)
+{
+    if (identityData)
+    {
+        std::generate(std::begin(M), std::end(M), [&]
+                      { return static_cast<T>(1); });
+    }
+    else if (fixedData)
+    {
+        for (int r = 0; r < numRows; r++)
+        {
+            for (int c = 0; c < numCols; c++)
+            {
+                M[r * numCols + c] = static_cast<T>(r + c);
+            }
+        }
+    }
+    else
+    {
+        std::random_device dev;
+        std::mt19937 rng(dev());
+        std::uniform_real_distribution<float> dist(1.0, 2.0);
+        std::generate(std::begin(M), std::end(M), [&]
+                      { return static_cast<T>(dist(rng)); });
+    }
+}
 
 template <typename T>
 static void vnni_matrix(
@@ -93,7 +125,7 @@ bool check_results(
                 std::cerr << "Error at m = " << m << ", n = " << n
                           << ": (local error " << localErr << "): Wanted "
                           << C_ref[index] << ", got " << C[index] << std::endl;
-                // return false;
+                return false;
             }
         }
     }
@@ -110,20 +142,10 @@ using ElementInputA = bfloat16_t;                        // <- data type of elem
 using ElementInputB = bfloat16_t;                        // <- data type of elements in input matrix B
 using ElementOutput = float;                        // <- data type of elements in output matrix D
 
-using TileShape = Shape<_64, _64, _16>;
+using TileShape = Shape<_32, _32, _16>;
 
 using TiledMma = TiledMMA<MMA_Atom<XE_8x16x16_BF16BF16F32F32_NN>,
         Layout<Shape<_8,_16,_1>>>;
-/*using GmemTiledCopyA = decltype(
-make_tiled_copy(Copy_Atom<UniversalCopy<uint32_t>, ElementInputA>{},
-                Layout<Shape <_1, _1>>{},
-                Layout<Shape<_8,_16>>{}));
-
-// Smem
-using GmemTiledCopyB = decltype(
-make_tiled_copy(Copy_Atom<UniversalCopy<uint32_t>, ElementInputB>{},
-                Layout<Shape <_1, _1>>{},
-                Layout<Shape<_16,_16>>{}));*/
 
 //// This code section describes the epilogue part of the kernel
 using EpilogueOp = cutlass::epilogue::thread::LinearCombination<
@@ -158,17 +180,13 @@ void test_gemm(int m, int n, int k)
   std::vector<TA> h_A(m*k);
   std::vector<TB> h_B(n*k);
   std::vector<TB> h_B_vnni(n*k);
-  std::vector<TC> h_C(m*n);
-  std::vector<TC> h_D(m*n);
+  std::vector<TC> h_C(m*n, static_cast<TC>(0));
+  std::vector<TC> h_D(m*n, static_cast<TC>(0));
 
-  // for (int j = 0; j < m*k; ++j) h_A[j] = static_cast<TA>( j );
-  // for (int j = 0; j < n*k; ++j) h_B[j] = static_cast<TB>( j );
-  for (int j = 0; j < m*k; ++j) h_A[j] = static_cast<TA>( 2*(rand() / double(RAND_MAX)) - 1 );
-  for (int j = 0; j < n*k; ++j) h_B[j] = static_cast<TB>( 2*(rand() / double(RAND_MAX)) - 1 );
-  for (int j = 0; j < m*n; ++j) h_C[j] = static_cast<TC>(0);
-  for (int j = 0; j < m*n; ++j) h_D[j] = static_cast<TC>(-1);
+  fill_matrix(h_A, m, k);
+  fill_matrix(h_B, k, n);
 
-  vnni_matrix(h_B_vnni, h_B, n, k, 2);
+  vnni_matrix(h_B_vnni, h_B, k, n, 2);
 
   auto d_A = syclcompat::malloc<TA>(m*k);
   auto d_B = syclcompat::malloc<TB>(n*k);
@@ -193,12 +211,12 @@ void test_gemm(int m, int n, int k)
   using namespace cute;
 
   // Define strides (mixed)
-  auto dA = make_stride(Int<1>{}, m, Int<1>{});
+  auto dA = make_stride(Int<1>{}, k, Int<1>{});
   auto dB = make_stride(Int<1>{}, n, Int<1>{});
-  auto dC = make_stride(Int<1>{}, m, Int<1>{});
+  auto dC = make_stride(Int<1>{}, n, Int<1>{});
 
-  using GmemTiledCopyA = decltype(make_xe_2d_copy(make_tensor(make_gmem_ptr(d_A), make_shape(m, k))));
-  using GmemTiledCopyB = decltype(make_xe_2d_copy(make_tensor(make_gmem_ptr(d_B), make_shape(k, n))));
+  using GmemTiledCopyA = XE_2D_LOAD;
+  using GmemTiledCopyB = XE_2D_LOAD;
 
   using CollectiveEpilogue = cutlass::epilogue::collective::DefaultEpilogue<
           decltype(dC),
@@ -265,11 +283,15 @@ void test_gemm(int m, int n, int k)
   CUTE_CHECK_LAST();
   syclcompat::wait();
   syclcompat::memcpy<TC>(h_C.data(), d_C, h_C.size());
+  syclcompat::wait();
   printf("Computing Reference\n");
   compute_reference(h_D, h_A, h_B, m, n, k);
-  check_results(m, n, h_D, h_C);
-  if(true) {
+
+  if(!check_results(m, n, h_D, h_C)) {
     printf("Incorrect output\n");
+    syclcompat::free(reinterpret_cast<void*>(d_A));
+    syclcompat::free(reinterpret_cast<void*>(d_B));
+    syclcompat::free(reinterpret_cast<void*>(d_C));
     return;
   }
   printf("Correct output\n");
@@ -277,10 +299,16 @@ void test_gemm(int m, int n, int k)
   timer.start();
   for (int i = 0; i < timing_iterations; ++i) {
     run(gemm_op);
+    syclcompat::wait();
   }
   CUTE_CHECK_LAST();
   double cute_time = timer.seconds() / timing_iterations;
   printf("CUTLASS_GEMM:     [%4.3f]TFlop/s  (%6.4f)ms\n", tflops / cute_time, cute_time*1000);
+
+  syclcompat::wait();
+  syclcompat::free(reinterpret_cast<void*>(d_A));
+  syclcompat::free(reinterpret_cast<void*>(d_B));
+  syclcompat::free(reinterpret_cast<void*>(d_C));
 }
 
 int main(int argc, char** argv)

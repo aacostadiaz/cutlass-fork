@@ -107,8 +107,14 @@ struct CollectiveMma<
     StrideB dB;
   };
 
-  // Device side kernel params
-  using Params = Arguments;
+  struct Params {
+    using XE_Copy_A = decltype(make_xe_2d_copy<GmemTiledCopyA>(make_tensor(static_cast<ElementA const*>(nullptr), 
+                                repeat_like(StrideA{}, int32_t(0)), StrideA{})));
+    using XE_Copy_B = decltype(make_xe_2d_copy<GmemTiledCopyB>(make_tensor(static_cast<ElementA const*>(nullptr), 
+                                repeat_like(StrideB{}, int32_t(0)), StrideB{})));
+    XE_Copy_A gmem_tiled_copy_a;
+    XE_Copy_B gmem_tiled_copy_b;
+  };
 
   //
   // Methods
@@ -118,9 +124,18 @@ struct CollectiveMma<
 
   template <class ProblemShape>
   static constexpr Params
-  to_underlying_arguments(ProblemShape const& _, Arguments const& args, void* workspace) {
+  to_underlying_arguments(ProblemShape const& problem_shape, Arguments const& args, void* workspace) {
     (void) workspace;
-    return args;
+
+    auto problem_shape_MNKL = append<4>(problem_shape, 1);
+    auto [M,N,K,L] = problem_shape_MNKL;
+
+    Tensor tensorA = make_tensor(args.ptr_A, make_layout(make_shape(M,K,L), args.dA));
+    Tensor tensorB = make_tensor(args.ptr_B, make_layout(make_shape(K,N,L), args.dB));
+
+    typename Params::XE_Copy_A copyA = make_xe_2d_copy<GmemTiledCopyA>(tensorA);
+    typename Params::XE_Copy_B copyB = make_xe_2d_copy<GmemTiledCopyB>(tensorB);
+    return Params{copyA, copyB};
   }
 
   /// Perform a threadblock-scoped matrix multiply-accumulate
@@ -141,21 +156,22 @@ struct CollectiveMma<
       KTileIterator k_tile_iter, int k_tile_count,
       ResidueMNK residue_mnk,
       int thread_idx,
-      char *smem_buf) 
+      char *smem_buf,
+      Params const& mainloop) 
   {
     using namespace cute;
 
     (void)residue_mnk;
 
     // TODO: revert these assert statements after changing the make_xe_2d_copy() function
-    // static_assert(is_rmem<FrgTensorD>::value, "D tensor must be rmem resident.");
+    static_assert(is_rmem<FrgTensorD>::value, "D tensor must be rmem resident.");
     // static_assert(is_gmem<TensorA>::value, "A tensor must be gmem resident.");
     // static_assert(is_gmem<TensorB>::value, "B tensor must be gmem resident.");
-    // static_assert(is_rmem<FrgTensorC>::value, "C tensor must be rmem resident.");
+    static_assert(is_rmem<FrgTensorC>::value, "C tensor must be rmem resident.");
 
     // Partition the copying of A and B tiles across the threads
-    GmemTiledCopyA gmem_tiled_copy_a;
-    GmemTiledCopyB gmem_tiled_copy_b;
+    // auto gmem_tiled_copy_a = make_xe_2d_copy(make_gmem_ptr(Arguments.ptr_A), make_shape(64, 64));
+    // auto gmem_tiled_copy_b = make_xe_2d_copy(make_gmem_ptr(Arguments.ptr_B), make_shape(64, 64));;
     // auto copy_a_thr = gmem_tiled_copy_a.get_slice(thread_idx);
     // auto copy_b_thr = gmem_tiled_copy_b.get_slice(thread_idx);
 
@@ -225,11 +241,11 @@ struct CollectiveMma<
       print("\n");
     }*/
 
-   for (int k_tile = 0, k = 0; k_tile < k_tile_count; ++k_tile, k += 16)
+   for (int k_tile = 0, k = 0; k_tile < k_tile_count; ++k_tile, k += get<2>(TileShape{}))
    {
      // Copy gmem to rmem for the first k_tile
-     copy(gmem_tiled_copy_a, gA(_,_,k), tAr);
-     copy(gmem_tiled_copy_b, gB(_,k/2,_), tBr);
+     copy(mainloop.gmem_tiled_copy_a, gA(_,_,k), tAr);
+     copy(mainloop.gmem_tiled_copy_b, gB(_,k/2,_), tBr);
      cute::gemm(tiled_mma, accum, tAr, tBr, src_accum);
    }
 
