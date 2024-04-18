@@ -249,19 +249,17 @@ struct MainloopSm90ArrayTmaGmmaWarpSpecialized {
 
 
 #if defined(CUTLASS_ENABLE_SYCL)
-struct MainloopIntelPVCUnpredicated {
+struct MainloopIntelPVCBase {
   constexpr static int Stages = 1;
   using ArchTag = arch::IntelPVC;
   using Schedule = KernelSinglestage;
   using ClusterShape = Shape<_1,_1,_1>;
+  static constexpr int SG_SZ = 16;
 };
 
-struct MainloopIntelPVC {
-  constexpr static int Stages = 1;
-  using ArchTag = arch::IntelPVC;
-  using Schedule = KernelSinglestage;
-  using ClusterShape = Shape<_1,_1,_1>;
-};
+struct MainloopIntelPVCUnpredicated : MainloopIntelPVCBase{};
+
+struct MainloopIntelPVC : MainloopIntelPVCBase{};
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

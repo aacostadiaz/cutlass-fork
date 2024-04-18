@@ -78,7 +78,7 @@ public:
   using MainloopParams = typename CollectiveMainloop::Params;
 
   static_assert(cute::is_void_v<TileScheduler_> or cute::is_same_v<TileScheduler_, PersistentScheduler>,
-    "SM70 kernel does not support specializing the tile scheduler.");
+    "Intel PVC does not support specializing the tile scheduler.");
   using TileSchedulerTag = TileScheduler_;
   using TileScheduler = typename detail::TileSchedulerSelector<
     TileScheduler_, ArchTag, TileShape,
@@ -102,7 +102,15 @@ public:
   static constexpr uint32_t MaxThreadsPerBlock = 16;
   // static constexpr uint32_t MaxThreadsPerBlock = CUTE_STATIC_V(cute::size(TiledMma{}));
   static constexpr uint32_t MinBlocksPerMultiprocessor = 1;
-  static constexpr int SG_SZ = 16;
+  static constexpr int SG_SZ = DispatchPolicy::SG_SZ;
+
+  static constexpr int tM = get<0>(shape(typename TiledMma::LayoutA_TV{})); // rows per dpas operation per sub_group for Matrix A
+  static constexpr int tN = get<1>(shape(typename TiledMma::LayoutB_TV{})); // cols per dpas operation per sub_group for Matrix B
+  static constexpr int tK = get<1>(shape(typename TiledMma::LayoutA_TV{})); // cols per dpas operation per sub_group for Matrix A
+
+  static constexpr int num_sg = MaxThreadsPerBlock / SG_SZ; // number of sub_groups per work group
+  static constexpr int MM = get<0>(TileShape{}) / (num_sg * tM); // A frags per sub_group
+  static constexpr int NN = get<1>(TileShape{}) / (num_sg * tN); // B frags per sub_group
 
   // Device side arguments
   struct Arguments {
@@ -205,42 +213,17 @@ public:
     // * calculate the total sub_groups launched
     // * next calculate the m,n,l co-ordinates per sub_group
     // * pass these co-ordinates along to the blk_coord_mnkl object
-    constexpr int tM = 8;
-    constexpr int tN = 16;
-    constexpr int tK = 16;
-    constexpr int num_sg = MaxThreadsPerBlock / SG_SZ; // sub_groups per work group
-    constexpr int MM = 4;//get<0>(blk_shape) / (num_sg * tM/*get<0>(shape(typename TiledMma::LayoutA_TV{}))*/); // A frags per sub_group
-    constexpr int NN = 2;//get<1>(blk_shape) / (num_sg * tN/*get<1>(shape(typename TiledMma::LayoutB_TV{}))*/); // B frags per sub_group
-    const int frags_sg_m_ = (M - 1) / tM/*get<0>(shape(typename TiledMma::LayoutA_TV{}))*/ + 1; // total fragments of A
-    const int frags_sg_n_ = (N - 1) / tN/*get<0>(shape(typename TiledMma::LayoutB_TV{}))*/ + 1; // total fragments of B
+    const int frags_sg_m_ = (M - 1) / tM + 1; // total fragments of A
+    const int frags_sg_n_ = (N - 1) / tN + 1; // total fragments of B
     const int sg_m_ = (frags_sg_m_ - 1) / MM + 1; // sub_groups required to process A fragments
     const int sg_n_ = (frags_sg_n_ - 1) / NN + 1; // sub_groups required to process B fragments
     using sycl::ext::oneapi::experimental::this_nd_item;
-    // auto item_global_id = (BlockIdxX() + BlockIdxY() * BlockDimX()) * MaxThreadsPerBlock + ThreadIdxX();
-    auto item_global_id = this_nd_item<3>().get_global_linear_id();
-    auto sg_global_id = item_global_id / SG_SZ;
-    auto m_coord = (sg_global_id / sg_n_) * MM * tM;
-    auto n_coord = (sg_global_id % sg_n_) * NN * tN;
-    // printf("item_id:%lu | m: %lu | n: %lu | MM: %d | NN: %d\n", item_global_id, m_coord, n_coord, MM, NN);
-    // auto m_coord = BlockIdxX();
-    // auto n_coord = BlockIdxY();
-    auto l_coord = BlockIdxZ();
+    const int item_global_id = static_cast<int>(this_nd_item<3>().get_global_linear_id());
+    const int sg_global_id = item_global_id / SG_SZ;
+    const int m_coord = (sg_global_id / sg_n_) * MM * tM;
+    const int n_coord = (sg_global_id % sg_n_) * NN * tN;
+    const int l_coord = BlockIdxZ();
     auto blk_coord_mnkl = make_coord(m_coord, n_coord, _, l_coord);                                        // (m,n,k,l)
-
-    // Represent the full tensors
-    // Tensor mA_mkl = make_tensor(make_gmem_ptr(params.mainloop.ptr_A), make_shape(M,K,L), params.mainloop.dA); //(m,k,l)
-    // Tensor mB_nkl = make_tensor(make_gmem_ptr(params.mainloop.ptr_B), make_shape(N,K,L), params.mainloop.dB); //(n,k,l)
-
-    // Get batch slice
-    // Tensor mA_mk = mA_mkl(_,_,l_coord);                                                                        // (m,k)
-    // Tensor mB_nk = mB_nkl(_,_,l_coord);                                                                        // (n,k)
-
-    // auto sg_shape = make_shape(MM * get<0>(shape(typename TiledMma::LayoutA_TV{})), NN * get<1>(shape(typename TiledMma::LayoutB_TV{})), get<2>(blk_shape));
-    // auto sg_shape = make_shape(Int<MM>{} * 8, Int<NN>{} * 16, Int<16>{});
-    using sg_shape = Shape<_32, _16, _16>;
-    // Slice to get the tiles this thread block is responsible for
-    // Tensor gA = local_tile(mA_mk, sg_shape{}, take<0,3>(blk_coord_mnkl), Step<_1, X,_1>{});           // (BLK_M,BLK_K,k)
-    // Tensor gB = local_tile(mB_nk, sg_shape{}, take<0,3>(blk_coord_mnkl), Step<X, _1,_1>{});           // (BLK_N,BLK_K,k)
 
     Tensor tAi = make_tensor(make_inttuple_iter(m_coord, 0), make_layout(make_shape(_1{}, Int<MM>{}, K), make_stride(_1{}, tM*E<0>{}, E<1>{})));
     Tensor tBi = make_tensor(make_inttuple_iter(0, n_coord), make_layout(make_shape(_1{}, K, Int<NN>{}), make_stride(_1{}, E<0>{}, tN*E<1>{})));

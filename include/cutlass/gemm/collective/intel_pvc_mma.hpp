@@ -43,7 +43,6 @@
  
 namespace cutlass::gemm::collective {
 using namespace cute;
-using sycl::ext::oneapi::experimental::printf;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <
@@ -162,6 +161,8 @@ struct CollectiveMma<
     using namespace cute;
 
     (void)residue_mnk;
+    (void)thread_idx;
+    (void)smem_buf;
 
     // TODO: revert these assert statements after changing the make_xe_2d_copy() function
     static_assert(is_rmem<FrgTensorD>::value, "D tensor must be rmem resident.");
@@ -169,48 +170,11 @@ struct CollectiveMma<
     // static_assert(is_gmem<TensorB>::value, "B tensor must be gmem resident.");
     static_assert(is_rmem<FrgTensorC>::value, "C tensor must be rmem resident.");
 
-    // Partition the copying of A and B tiles across the threads
-    // auto gmem_tiled_copy_a = make_xe_2d_copy(make_gmem_ptr(Arguments.ptr_A), make_shape(64, 64));
-    // auto gmem_tiled_copy_b = make_xe_2d_copy(make_gmem_ptr(Arguments.ptr_B), make_shape(64, 64));;
-    // auto copy_a_thr = gmem_tiled_copy_a.get_slice(thread_idx);
-    // auto copy_b_thr = gmem_tiled_copy_b.get_slice(thread_idx);
-
-    // Allocate the register tiles
-    // Tensor rA = make_fragment_like(gA(_,_,0));                        // (ACPY,ACPY_M,ACPY_K)
-    // Tensor rB = make_fragment_like(gB(_,_,0));                        // (BCPY,BCPY_N,BCPY_K)
-
-    // Tensor tAgA = copy_a_thr.partition_S(gA);                                  // (ACPY,ACPY_M,ACPY_K,k)
-    // Tensor tBgB = copy_b_thr.partition_S(gB);                                  // (BCPY,BCPY_N,BCPY_K,k)
-    // Tensor tArA = copy_a_thr.partition_D(rA);                                  // (ACPY,ACPY_M,ACPY_K,k)
-    // Tensor tBrB = copy_b_thr.partition_D(rB);                                  // (BCPY,BCPY_N,BCPY_K,k)
-
+    // Tensor to hold input data
     Tensor tAr = make_tensor<ushort>(Shape<_8, Int<4>>{});
     Tensor tBr = make_tensor<uint>(Shape<_8, Int<2>>{});
-    // Tensor tCr = make_tensor<float>(Shape<_8, Int<4>, Int<2>>{});
     // Tile MMA compute thread partitions and allocate accumulators
     TiledMma tiled_mma;
-    // auto thr_mma = tiled_mma.get_thread_slice(thread_idx);
-
-    // Tensor tCrA  = thr_mma.partition_fragment_A(rA);     // (MMA,MMA_M,MMA_K)
-    // Tensor tCrB  = thr_mma.partition_fragment_B(rB);     // (MMA,MMA_M,MMA_K)
-
-    /*if (thread0()) {
-      printf("tArA \n");
-      print(tArA);
-      print("\n");
-      printf("tBrB \n");
-      print(tBrB);
-      print("\n");
-      printf("tCrA \n");
-      print(tCrA);
-      print("\n");
-      printf("tCrB \n");
-      print(tCrB);
-      print("\n");
-      printf("accum \n");
-      print(accum);
-      print("\n");
-    }*/
 
     // CUTE_STATIC_ASSERT_V(size<1>(tCrA) == size<1>(accum));                     // MMA_M
     // CUTE_STATIC_ASSERT_V(size<1>(tCrA) == size<1>(src_accum));                 // MMA_M
@@ -221,26 +185,6 @@ struct CollectiveMma<
     //
     // Mainloop
     //
-    // auto K_TILE_MAX = size<3>(tAgA);
-
-    /*if (thread0()) {
-      printf("gA \n");
-      print(gA);
-      print("\n");
-      printf("tAgA \n");
-      print(tAgA);
-      print("\n");
-      printf("gB \n");
-      print(gB);
-      print("\n");
-      printf("tBgB \n");
-      print(tBgB);
-      print("\n");
-      print("K_TILE_MAX = ");
-      print(K_TILE_MAX);
-      print("\n");
-    }*/
-
    for (int k_tile = 0, k = 0; k_tile < k_tile_count; ++k_tile, k += get<2>(TileShape{}))
    {
      // Copy gmem to rmem for the first k_tile
@@ -248,44 +192,6 @@ struct CollectiveMma<
      copy(mainloop.gmem_tiled_copy_b, gB(_,k/2,_), tBr);
      cute::gemm(tiled_mma, accum, tAr, tBr, src_accum);
    }
-
-   /*CUTLASS_PRAGMA_NO_UNROLL
-   while (k_tile_count > -1)
-   {
-     // Pipeline the outer products with a static for loop
-     for_each(make_int_sequence<K_BLOCK_MAX>{}, [&] (auto k_block)
-     {
-       if (k_block == K_BLOCK_MAX - 1)
-       {
-         syncthreads();
-
-         // Copy rmem to smem
-         copy(tArA, tAsA);
-         copy(tBrB, tBsB);
-         syncthreads();
-       }
-
-       // Load A, B smem->rmem for k+1
-       int k_block_next = (k_block + Int<1>{}) % K_BLOCK_MAX;     // static
-       copy(tCsA(_,_,k_block_next), tCrA_copy_view(_,_,k_block_next));
-       copy(tCsB(_,_,k_block_next), tCrB_copy_view(_,_,k_block_next));
-       if (k_block == 0)
-       {
-         // Copy gmem to rmem
-         copy(gmem_tiled_copy_a, tAgA(_,_,_,*k_tile_iter), tArA);
-         copy(gmem_tiled_copy_b, tBgB(_,_,_,*k_tile_iter), tBrB);
-         if (--k_tile_count > 0) ++k_tile_iter;
-       }
-
-       // transform before compute
-       cute::transform(tCrA(_,_,k_block), TransformA{});
-       cute::transform(tCrB(_,_,k_block), TransformB{});
-
-       // Thread-level register gemm for k
-       // disambiguate gemm (shared with the namespace name)
-       cute::gemm(tiled_mma, accum, tCrA(_,_,k_block), tCrB(_,_,k_block), src_accum);
-     });
-   }*/
   }
 };
 
