@@ -199,14 +199,27 @@ struct CollectiveMma<
     // Instantiate the M MA object
     TiledMma tiled_mma;
 
-    //
-    // Mainloop
-    //
+    auto prefetch_k = 0;
+    // Prefetch 3 blocks in advance
+    for (int i = 0; i < 3; ++i) {
+      prefetch(mainloop.gmem_tiled_copy_a, gA(_, _, prefetch_k));
+      prefetch(mainloop.gmem_tiled_copy_b, gB(_, prefetch_k/2, _));
+      prefetch_k += DpasK * FragsK;
+    }
+
+   //
+   // Mainloop
+   //
    for (int k_tile = 0, k = 0; k_tile < k_tile_count; ++k_tile, k += DpasK * FragsK)
    {
      // Copy gmem to rmem for the first k_tile
      copy(mainloop.gmem_tiled_copy_a, gA(_,_,k), tAr);
      copy(mainloop.gmem_tiled_copy_b, gB(_,k/2,_), tBr);
+
+     // Prefetch the next block
+     prefetch(mainloop.gmem_tiled_copy_a, gA(_, _, prefetch_k));
+     prefetch(mainloop.gmem_tiled_copy_b, gB(_, prefetch_k/2, _));
+     prefetch_k += DpasK * FragsK;
 
      for (int kl = 0; kl < FragsK; kl++) {
        cute::gemm(tiled_mma, accum, tAr_view(_, _, kl), tBr_view(_, kl, _), src_accum);

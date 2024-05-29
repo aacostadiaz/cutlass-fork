@@ -112,7 +112,8 @@ struct Copy_Atom<Copy_Traits<Args...>, CopyInternalType>
       //   ((A,B,C,...)) -> (A,B,C,...)
       return copy(*this, tensor<0>(src), tensor<0>(dst));
     } else {
-      static_assert(dependent_false<SEngine>, "No instruction match and no recursion possible.");
+      return copy_unpack(*this, src, dst);
+//      static_assert(dependent_false<SEngine>, "No instruction match and no recursion possible.");
     }
   }
 
