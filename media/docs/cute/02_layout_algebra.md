@@ -191,21 +191,21 @@ Clearly, CuTe does not use arrays to store shapes or strides and the above code 
 
 #### Example 1 -- Reshape a layout into a matrix
 
-`20:2  o  (5,4):(4,1)`.
+`20:2  o  (5,4):(4,1)`. Composition formulation.
 
 This describes interpreting the layout `20:2`
 as a 5x4 matrix in a row-major order.
 
-1. ` = 20:2 o (5:4,4:1)`. Concatenation of sublayouts.
+1. ` = 20:2 o (5:4,4:1)`. Layout `(5,4):(4,1)` as concatenation of sublayouts.
 
 2. ` = (20:2 o 5:4, 20:2 o 4:1)`. Left distributivity.
 
     * `20:2 o 5:4  =>  5:8`. Trivial case.
     * `20:2 o 4:1  =>  4:2`. Trivial case.
 
-3. ` = (5:8, 4:2)`.
+3. ` = (5:8, 4:2)`. Composed Layout as concatenation of sublayouts.
 
-4. ` = (5,4):(8,2)`. Concatenation of sublayouts.
+4. ` = (5,4):(8,2)`. Final composed layout.
 
 #### Example 2 -- Reshape a layout into a matrix
 
@@ -214,18 +214,18 @@ as a 5x4 matrix in a row-major order.
 This describes interpreting the layout `(10,2):(16,4)`
 as a 5x4 matrix in a column-major order.
 
-1. ` = (10,2):(16,4) o (5:1,4:5)`. Concatenation of sublayouts.
+1. ` = (10,2):(16,4) o (5:1,4:5)`. Layout `(5,4):(1,5)` as concatenation of sublayouts.
 
 2. ` = ((10,2):(16,4) o 5:1, (10,2):(16,4) o 4:5)`. Left distributivity.
 
     * `(10,2):(16,4) o 5:1 => (5,1):(16,4)`. Mod out the shape `5`.
     * `(10,2):(16,4) o 4:5 => (2,2):(80,4)`. Div out the stride `5`.
 
-3. ` = ((5,1):(16,4), (2,2):(80,4))`. Collect results.
+3. ` = ((5,1):(16,4), (2,2):(80,4))`. Composed Layout as concatenation of sublayouts.
 
 4. ` = (5:16, (2,2):(80,4))`. By-mode coalesce.
 
-5. ` = (5,(2,2))):(16,(80,4))`. Concatenation of sublayouts.
+5. ` = (5,(2,2))):(16,(80,4))`. Final composed layout.
 
 We get exactly this result with CuTe
 if we use compile-time shapes and strides.
@@ -317,23 +317,25 @@ The `complement` of a layout attempts to find another layout that represents the
 
 You can find many examples and checked post-conditions in [the `complement` unit test](../../../test/unit/cute/core/complement.cpp). The post-conditions include
 ```cpp
-// @post cosize(make_layout(@a layout_a, @a result))) >= @a cosize_hi
-// @post cosize(@a result) >= round_up(@a cosize_hi, cosize(@a layout_a))
+// @post cosize(make_layout(@a layout_a, @a result))) >= size(@a cotarget)
+// @post cosize(@a result) >= round_up(size(@a cotarget), cosize(@a layout_a))
 // @post for all i, 1 <= i < size(@a result),
 //         @a result(i-1) < @a result(i)
 // @post for all i, 1 <= i < size(@a result),
 //         for all j, 0 <= j < size(@a layout_a),
 //           @a result(i) != @a layout_a(j)
-Layout complement(LayoutA const& layout_a, Integral const& cosize_hi)
+Layout complement(LayoutA const& layout_a, Shape const& cotarget)
 ```
-That is, the complement `R` of a layout `A` with respect to an integer `M` satisfies the following properties.
-1. The size (and cosize) of `R` is *bounded* by `M`.
+That is, the complement `R` of a layout `A` with respect to a Shape (IntTuple) `M` satisfies the following properties.
+1. The size (and cosize) of `R` is *bounded* by `size(M)`.
 2. `R` is *ordered*.  That is, the strides of `R` are positive and increasing.  This means that `R` is unique.
 3. `A` and `R` have *disjoint* codomains. `R` attempts to "complete" the codomain of `A`.
 
+The `cotarget` parameter above is most commonly an integer -- you can see we only use `size(cotarget)` above. However, sometimes it is useful to specify an integer that has static properties. For example, `28` is a dynamic integer and `(_4,7)` is a shape with size `28` that is statically known to be divisible by `_4`. Both will produce the same `complement` mathematically, but the extra information can used by `complement` to preserve the staticness of the result as much as possible.
+
 ### Complement Examples
 
-`complement` is most effective on static shapes and strides, so consider all integers below to be static. Similar examples for dynamic shapes and strides can be found in the unit test.
+`complement` is most effective on static shapes and strides, so consider all integers below to be static. Similar examples for dynamic shapes and strides as well as IntTuple `cotarget` can be found in [the unit test](../../../test/unit/cute/core/complement.cpp).
 
 * `complement(4:1, 24)` is `6:4`. Note that `(4,6):(1,4)` has cosize `24`. The layout `4:1` is effectively repeated 6 times with `6:4`.
 
@@ -345,7 +347,7 @@ That is, the complement `R` of a layout `A` with respect to an integer `M` satis
 
 * `complement((2,4):(1,6), 24)` is `3:2`. Note that `((2,4),3):((1,6),2)` has cosize `24` and produces unique indices.
 
-* `complement((2,2):(1,6), 24)` is `(3,2):(2,12)`. Note that `((2,4),(2,2)):((1,6),(2,12))` has cosize `24` and produces unique indices.
+* `complement((2,2):(1,6), 24)` is `(3,2):(2,12)`. Note that `((2,2),(3,2)):((1,6),(2,12))` has cosize `24` and produces unique indices.
 
 <p align="center">
   <img src="../../images/cute/complement1.png" alt="complement1.png" height="75"/>
@@ -388,12 +390,12 @@ The elements NOT pointed to by `B` sounds like a complement, `B*`, up to the siz
 
 ### Logical Divide 1-D Example
 
-Consider tiling the 1-D layout `A = (2,4,3):(4,1,8)` with the tiler `B = 4:2`. Informally, this means that we have a 1-D vector of 24 elements in some storage order defined by `A` and we want to extract tiles of 4 elements strided by 2.
+Consider tiling the 1-D layout `A = (4,2,3):(2,1,8)` with the tiler `B = 4:2`. Informally, this means that we have a 1-D vector of 24 elements in some storage order defined by `A` and we want to extract tiles of 4 elements strided by 2.
 
 This is computed in the three steps described in the implementation above.
 * Complement of `B = 4:2` under `size(A) = 24` is `B* = (2,3):(1,8)`.
 * Concantenation of `(B,B*) = (4,(2,3)):(2,(1,8))`.
-* Composition of `A = (2,4,3):(4,1,8)` with `(B,B*)` is then `((2,2),(2,3)):((4,1),(2,8))`.
+* Composition of `A = (4,2,3):(2,1,8)` with `(B,B*)` is then `((2,2),(2,3)):((4,1),(2,8))`.
 
 <p align="center">
   <img src="../../images/cute/divide1.png" alt="divide1.png" height="150"/>
@@ -413,7 +415,7 @@ Similar to the 2-D composition example above, consider a 2-D layout `A = (9,(4,8
 
 The above figure depicts `A` as a 2-D layout with the elements pointed to by `B` highlighted in gray. The layout `B` describes our "tile" of data, and there are twelve of those tiles in `A` shown by each of the colors. After the divide, the first mode of each mode of the result is the tile of data and the second mode of each mode iterates over each tile. In that sense, this operation can be viewed as a kind of `gather` operation or as simply a permutation on the rows and cols.
 
-Note that the first mode of each mode of the result is the sublayout `(3,(2,4)):(236,(13,52))` and is precisely the result we would have received if we had applied `composition` instead of `logical_divide`.
+Note that the first mode of each mode of the result is the sublayout `(3,(2,4)):(177,(13,2))` and is precisely the result we would have received if we had applied `composition` instead of `logical_divide`.
 
 ### Zipped, Tiled, Flat Divides
 
@@ -425,9 +427,9 @@ Layout Shape : (M, N, L, ...)
 Tiler Shape  : <TileM, TileN>
 
 logical_divide : ((TileM,RestM), (TileN,RestN), L, ...)
-zipped_divide  : ((TileM,TileN,...), (RestM,RestN,L,...))
-tiled_divide   : ((TileM,TileN,...), RestM, RestN, L, ...)
-flat_divide    : (TileM, TileN, ..., RestM, RestN, L, ...)
+zipped_divide  : ((TileM,TileN), (RestM,RestN,L,...))
+tiled_divide   : ((TileM,TileN), RestM, RestN, L, ...)
+flat_divide    : (TileM, TileN, RestM, RestN, L, ...)
 ```
 
 For example, the `zipped_divide` function applies `logical_divide`, and then gathers the "subtiles" into a single mode and the "rest" into a single mode.

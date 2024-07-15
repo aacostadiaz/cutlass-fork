@@ -317,6 +317,8 @@ template <class T>
 struct is_tensor : false_type {};
 template <class Engine, class Layout>
 struct is_tensor<Tensor<Engine,Layout>> : true_type {};
+template <class T>
+constexpr bool is_tensor_v = is_tensor<T>::value;
 
 // Customization point for creation of owning and non-owning Tensors
 template <class T>
@@ -1083,7 +1085,6 @@ CUTE_HOST std::ostream& operator<<(std::ostream& os, Tensor<Engine,Layout> const
 
 #include <cute/pointer_swizzle.hpp>
 #include <cute/pointer_flagged.hpp>
-
 //
 // Tensor Algorithms
 //

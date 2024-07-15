@@ -43,6 +43,7 @@ if (CUTLASS_ENABLE_SYCL)
 else()
   add_subdirectory(core)
   add_subdirectory(volta)
+  add_subdirectory(turing)
   add_subdirectory(ampere)
   add_subdirectory(hopper)
   add_subdirectory(msvc_compilation)
@@ -53,6 +54,7 @@ else()
     cutlass_test_unit_cute_layout
     cutlass_test_unit_cute_core
     cutlass_test_unit_cute_volta
+    cutlass_test_unit_cute_turing
     cutlass_test_unit_cute_ampere
     cutlass_test_unit_cute_hopper
     cutlass_test_unit_cute_msvc_compilation
@@ -65,6 +67,7 @@ else()
     test_unit_cute_core
     test_unit_cute_volta
     test_unit_cute_ampere
+    test_unit_cute_turing
     test_unit_cute_hopper
     test_unit_cute_msvc_compilation
   )
