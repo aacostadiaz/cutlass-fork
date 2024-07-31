@@ -32,6 +32,7 @@
 #pragma once
 
 #if defined(CUTLASS_ENABLE_SYCL)
+#include <syclcompat.hpp>
 #include "cutlass/util/sycl_event_manager.hpp"
 #else
 #include <cuda_runtime.h>
@@ -40,10 +41,10 @@
 struct GPU_Clock
 {
   GPU_Clock() {
-#if defined(CUTLASS_ENABLE_SYCL)
+#if defined(CUTLASS_SYCL_EVENT_PROFILING)
     start_ = SyclEvent{};
     stop_ = SyclEvent{};
-#else
+#elif !defined(CUTLASS_ENABLE_SYCL)
     cudaEventCreate(&start_);
     cudaEventCreate(&stop_);
     cudaEventRecord(start_);
@@ -51,30 +52,38 @@ struct GPU_Clock
   }
 
   ~GPU_Clock() {
-#if defined(CUTLASS_ENABLE_SYCL)
+#if defined(CUTLASS_SYCL_EVENT_PROFILING)
     syclEventDestroy(start_);
     syclEventDestroy(stop_);
-#else
+#elif !defined(CUTLASS_ENABLE_SYCL)
     cudaEventDestroy(start_);
     cudaEventDestroy(stop_);
 #endif
   }
 
   void start() {
-#if defined(CUTLASS_ENABLE_SYCL)
+#if defined(CUTLASS_SYCL_EVENT_PROFILING)
     syclEventRecord(start_);
+#elif defined(CUTLASS_ENABLE_SYCL)
+    syclcompat::get_default_queue().wait();
+    start_ = std::chrono::high_resolution_clock::now();
 #else
     cudaEventRecord(start_);
 #endif
   }
 
   float milliseconds() {
-#if defined(CUTLASS_ENABLE_SYCL)
+#if defined(CUTLASS_SYCL_EVENT_PROFILING)
     syclEventRecord(stop_);
     syclEventSynchronize(start_, stop_);
     float time;
     syclEventElapsedTime(&time, start_, stop_);
     return time;
+#elif defined(CUTLASS_ENABLE_SYCL)
+    syclcompat::get_default_queue().wait();
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float, std::milli> time = stop - start_;
+    return time.count();
 #else
     cudaEventRecord(stop_);
     cudaEventSynchronize(stop_);
@@ -89,8 +98,14 @@ struct GPU_Clock
   }
 
  private:
-#if defined(CUTLASS_ENABLE_SYCL)
+#if defined(CUTLASS_SYCL_EVENT_PROFILING)
     SyclEvent start_, stop_;
+#elif defined(CUTLASS_ENABLE_SYCL)
+    typedef std::chrono::nanoseconds				                  duration;
+    typedef std::chrono::high_resolution_clock		                  high_resolution_clock;
+    typedef std::chrono::time_point<high_resolution_clock, duration>  time_point;
+
+    time_point start_ = std::chrono::high_resolution_clock::now();
 #else
     cudaEvent_t start_, stop_;
 #endif

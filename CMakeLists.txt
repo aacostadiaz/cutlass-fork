@@ -68,6 +68,7 @@ project(CUTLASS VERSION ${_CUTLASS_VERSION_MAJOR}.${_CUTLASS_VERSION_MINOR}.${_C
 ###################################################################################################
 
 set(CUTLASS_ENABLE_SYCL OFF CACHE BOOL "Enable SYCL")
+set(CUTLASS_SYCL_PROFILING_ENABLED OFF CACHE BOOL "Use SYCL events to calculate device execution time")
 
 if (CUTLASS_ENABLE_SYCL)
   set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -84,6 +85,9 @@ if (CUTLASS_ENABLE_SYCL)
   find_package(DPCPP)
   include(${CMAKE_CURRENT_SOURCE_DIR}/SYCL.cmake)
 
+  if (CUTLASS_SYCL_PROFILING_ENABLED)
+    add_compile_definitions(CUTLASS_SYCL_PROFILING_ENABLED)
+  endif()
 else()
   include(${CMAKE_CURRENT_SOURCE_DIR}/CUDA.cmake)
 

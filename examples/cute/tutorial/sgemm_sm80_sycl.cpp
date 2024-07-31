@@ -29,8 +29,6 @@
  *
  **************************************************************************************************/
 
-#define CUTLASS_SYCLCOMPAT_PROFILING_ENABLED
-
 #include "cutlass/util/GPU_Clock.hpp"
 #include "cutlass/util/print_error.hpp"
 
@@ -471,14 +469,6 @@ int main(int argc, char** argv) {
 
   char transB = 'T';
   if (argc >= 6) sscanf(argv[5], "%c", &transB);
-
-  sycl::property_list prop = {
-          sycl::property::queue::in_order(),
-          sycl::property::queue::enable_profiling()
-  };
-
-  auto q = sycl::queue(syclcompat::get_default_context(), syclcompat::get_current_device(), prop);
-  syclcompat::set_default_queue(q);
 
   using TA = float;
   using TB = float;

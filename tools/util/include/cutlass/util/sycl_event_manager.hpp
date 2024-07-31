@@ -129,7 +129,5 @@ inline void syclEventSynchronize(SyclEvent const& begin, SyclEvent const& end) {
 }
 
 inline void syclEventElapsedTime(float* time, SyclEvent const& begin, SyclEvent const& end) {
-#if defined(CUTLASS_SYCLCOMPAT_PROFILING_ENABLED)
   *time = EventManager::getInstance().getEventElapsedTimeMs(begin, end);
-#endif
 }
