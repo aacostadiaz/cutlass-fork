@@ -29,21 +29,17 @@
  *
  **************************************************************************************************/
 
-#include "common/benchmark_runner.hpp"
+#include "cutlass/cutlass.h"
 #include "cutlass/kernel_hardware_info.h"
 #include "cutlass/util/command_line.h"
+
+#include "benchmark_runner.hpp"
+#include "benchmarks.hpp"
 
 #include <benchmark/benchmark.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
-
-#if (SYCL_NVIDIA_TARGET || !CUTLASS_ENABLE_SYCL)
-#include "ampere/benchmarks.hpp"
-#elif (SYCL_INTEL_TARGET)
-#include "pvc/benchmarks.hpp"
-#endif
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 

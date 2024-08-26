@@ -31,17 +31,55 @@
 
 #pragma once
 
-#include "../common/benchmark_runner.hpp"
-#include "ampere_gemm_bf16_bf16_fp32.hpp"
-#include "ampere_gemm_fp16_fp16_fp32.hpp"
-#include "ampere_gemm_tf32_tf32_fp32.hpp"
+#include "benchmark_runner.hpp"
+#include "gemm_configuration.hpp"
 
-CUTLASS_CREATE_GEMM_BENCHMARK(AmpereGemmBF16BF16FP32_CCCC);
-CUTLASS_CREATE_GEMM_BENCHMARK(AmpereGemmFP16FP16FP32_CCCC);
-CUTLASS_CREATE_GEMM_BENCHMARK(AmpereGemmTF32TF32FP32_CCCC);
+#if defined(SYCL_NVIDIA_TARGET) || !defined(CUTLASS_ENABLE_SYCL)
+
+using AmpereGemmBF16BF16FP32_CCC = cutlass::gemm::device::GemmConfiguration<
+        cutlass::arch::Sm80,
+        cutlass::bfloat16_t, cutlass::layout::ColumnMajor,
+        cutlass::bfloat16_t, cutlass::layout::ColumnMajor,
+        float, cutlass::layout::ColumnMajor,
+        float>;
+
+using AmpereGemmFP16FP16FP32_CCC = cutlass::gemm::device::GemmConfiguration<
+        cutlass::arch::Sm80,
+        cutlass::half_t, cutlass::layout::ColumnMajor,
+        cutlass::half_t, cutlass::layout::ColumnMajor,
+        float, cutlass::layout::ColumnMajor,
+        float>;
+
+using AmpereGemmTF32TF32FP32_CCC = cutlass::gemm::device::GemmConfiguration<
+        cutlass::arch::Sm80,
+        float, cutlass::layout::ColumnMajor,
+        float, cutlass::layout::ColumnMajor,
+        float, cutlass::layout::ColumnMajor,
+        float>;
+
+CUTLASS_CREATE_GEMM_BENCHMARK(AmpereGemmBF16BF16FP32_CCC);
+CUTLASS_CREATE_GEMM_BENCHMARK(AmpereGemmFP16FP16FP32_CCC);
+CUTLASS_CREATE_GEMM_BENCHMARK(AmpereGemmTF32TF32FP32_CCC);
 
 static void register_benchmarks() {
-  CUTLASS_BENCHMARK(AmpereGemmBF16BF16FP32_CCCC);
-  CUTLASS_BENCHMARK(AmpereGemmFP16FP16FP32_CCCC);
-  CUTLASS_BENCHMARK(AmpereGemmTF32TF32FP32_CCCC);
+  CUTLASS_BENCHMARK(AmpereGemmBF16BF16FP32_CCC);
+  CUTLASS_BENCHMARK(AmpereGemmFP16FP16FP32_CCC);
+  CUTLASS_BENCHMARK(AmpereGemmTF32TF32FP32_CCC);
 }
+
+#else
+
+using PvcGemmBF16BF16FP32_RRR = cutlass::gemm::device::GemmConfiguration<
+        cutlass::arch::IntelPVC,
+        cutlass::bfloat16_t, cutlass::layout::RowMajor,
+        cutlass::bfloat16_t, cutlass::layout::RowMajor,
+        float, cutlass::layout::RowMajor,
+        float>;
+
+CUTLASS_CREATE_GEMM_BENCHMARK(PvcGemmBF16BF16FP32_RRR);
+
+static void register_benchmarks() {
+  CUTLASS_BENCHMARK(PvcGemmBF16BF16FP32_RRR);
+}
+
+#endif
