@@ -34,3 +34,7 @@ cutlass_example_add_executable(
   gemm_softmax.cu
   )
 
+cutlass_example_add_executable(
+  35_gemm_softmax_cute
+  gemm_softmax_cute.cu
+  )
