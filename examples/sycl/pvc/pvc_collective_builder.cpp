@@ -300,14 +300,12 @@ int main(int argc, const char** argv)
   // to use a GPU other than that with device ID 0.
   hw_info.sm_count = cutlass::KernelHardwareInfo::query_device_multiprocessor_count(hw_info.device_id);
 
-  bool passed;
-
   // The code section below describes datatype for input, output matrices and computation between
   // elements in input matrices.
   using ElementAccumulator = float;                   // <- data type of accumulator
-  using ElementComputeEpilogue = float;  // <- data type of epilogue operations
-  using ElementInputA = bfloat16_t;                        // <- data type of elements in input matrix A
-  using ElementInputB = bfloat16_t;                        // <- data type of elements in input matrix B
+  using ElementComputeEpilogue = float;               // <- data type of epilogue operations
+  using ElementInputA = bfloat16_t;                   // <- data type of elements in input matrix A
+  using ElementInputB = bfloat16_t;                   // <- data type of elements in input matrix B
   using ElementOutput = float;                        // <- data type of elements in output matrix D
 
   constexpr int AlignmentA = sizeof(ElementInputA);
@@ -334,8 +332,7 @@ int main(int argc, const char** argv)
   >::CollectiveOp;
 
   using EpilogueOp = cutlass::epilogue::fusion::LinCombEltAct<cutlass::epilogue::thread::ReLu, 
-          ElementOutput, ElementComputeEpilogue, ElementAccumulator, 
-          ElementAccumulator, cutlass::FloatRoundStyle::round_to_nearest>;
+          ElementOutput, ElementComputeEpilogue>;
 
   using CollectiveEpilogue = cutlass::epilogue::collective::CollectiveBuilder<
     cutlass::arch::IntelPVC, cutlass::arch::OpClassTensorOp,
