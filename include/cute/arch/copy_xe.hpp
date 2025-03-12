@@ -33,11 +33,6 @@
 #include <cute/arch/xe_copy_2B.hpp>
 #include <cute/arch/xe_copy_4B.hpp>
 #include <cute/arch/xe_copy_8B.hpp>
-#ifdef __SYCL_DEVICE_ONLY__
-#define SYCL_DEVICE_BUILTIN(x) SYCL_EXTERNAL extern "C" x
-#else
-#define SYCL_DEVICE_BUILTIN(x) inline x { assert(false); }
-#endif
 
 // prefetch
 SYCL_DEVICE_BUILTIN(void __builtin_IB_lsc_prefetch_global_uchar(
@@ -70,6 +65,8 @@ SYCL_DEVICE_BUILTIN(void __builtin_IB_lsc_prefetch_global_ulong4(
 SYCL_DEVICE_BUILTIN(void __builtin_IB_lsc_prefetch_global_ulong8(
     const __attribute__((opencl_global)) uint64_t *base, int immElemOff,
     enum CacheControl cacheOpt));
+
+#undef SYCL_DEVICE_OCL
 #undef SYCL_DEVICE_BUILTIN
 
 #ifdef __SYCL_DEVICE_ONLY__
