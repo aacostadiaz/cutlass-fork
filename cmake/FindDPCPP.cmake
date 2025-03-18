@@ -65,7 +65,7 @@ endif()
 if("${DPCPP_SYCL_TARGET}" STREQUAL "intel_gpu_pvc" OR
    "${DPCPP_SYCL_TARGET}" STREQUAL "spir64" OR
    "${DPCPP_SYCL_TARGET}" STREQUAL "intel_gpu_bmg_g21")
-  list(APPEND DPCPP_FLAGS "-Xspirv-translator;-spirv-ext=+SPV_INTEL_split_barrier")
+  list(APPEND DPCPP_FLAGS "-Xspirv-translator;-spirv-ext=+SPV_INTEL_split_barrier,+SPV_INTEL_2d_block_io")
 endif()
 
 if(UNIX)
