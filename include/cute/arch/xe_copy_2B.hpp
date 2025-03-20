@@ -39,11 +39,13 @@
 #define CUTE_ARCH_COPY_XE_ENABLED
 #endif
 
-#if defined(CUTE_ARCH_COPY_XE_ENABLED) && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER < 20250200)
+// #if defined(CUTE_ARCH_COPY_XE_ENABLED) && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER < 20250200)
+// #define CUTE_ARCH_COPY_XE_BUILTIN_ENABLED
+// #elif defined(CUTE_ARCH_COPY_XE_ENABLED)
+// #define CUTE_ARCH_COPY_XE_SPIRV_ENABLED
+// #endif
+
 #define CUTE_ARCH_COPY_XE_BUILTIN_ENABLED
-#elif defined(CUTE_ARCH_COPY_XE_ENABLED)
-#define CUTE_ARCH_COPY_XE_SPIRV_ENABLED
-#endif
 
 // SPIRV copy definitions
 #if defined(CUTE_ARCH_COPY_XE_SPIRV_ENABLED)
@@ -51,24 +53,47 @@ SYCL_EXTERNAL __attribute__((convergent)) void __spirv_Subgroup2DBlockLoadINTEL(
     int ElementSize, int BlockWidth, int BlockHeight, int BlockCount,
     const void* src_base_pointer, int memory_width, int memory_height,
     int memory_pitch,  cute::intel::coord_t coordinate, void* dst_pointer);
-
+SYCL_EXTERNAL __attribute__((convergent)) void __spirv_Subgroup2DBlockLoadTransformINTEL(
+    int ElementSize, int BlockWidth, int BlockHeight, int BlockCount,
+    const void* src_base_pointer, int memory_width, int memory_height,
+    int memory_pitch,  cute::intel::coord_t coordinate, void* dst_pointer);
+SYCL_EXTERNAL __attribute__((convergent)) void __spirv_Subgroup2DBlockPrefetchINTEL(
+    int ElementSize, int BlockWidth, int BlockHeight, int BlockCount,
+    const void* src_base_pointer, int memory_width, int memory_height,
+    int memory_pitch,  cute::intel::coord_t coordinate);
 namespace cute::detail {
 
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
 struct OpSubgroup2DBlockLoadINTEL {
-    template<typename T>
     CUTE_HOST_DEVICE
     void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
-            cute::intel::coord_t coordinate, T* dstPointer) {
-#ifdef __SYCL_DEVICE_ONLY__
+            cute::intel::coord_t coordinate,void* dstPointer) {
         __spirv_Subgroup2DBlockLoadINTEL(ElementSize, BlockWidth, BlockHeight, BlockCount,
-            srcBasePointer, memoryWidth, memoryHeight, memoryPitch, coordinate,
-            static_cast<void *>(dstPointer));
-#endif
+            srcBasePointer, memoryWidth, memoryHeight, memoryPitch, coordinate, dstPointer);
     }
 };
 
-}
+template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
+struct OpSubgroup2DBlockLoadTransformINTEL {
+    CUTE_HOST_DEVICE
+    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
+        cute::intel::coord_t coordinate, void* dstPointer) {
+      __spirv_Subgroup2DBlockLoadTransformINTEL(ElementSize, BlockWidth, BlockHeight, BlockCount,
+        srcBasePointer, memoryWidth, memoryHeight, memoryPitch, coordinate, dstPointer);
+    }
+};
+
+template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
+struct OpSubgroup2DBlockPrefetchINTEL {
+    CUTE_HOST_DEVICE
+    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
+        cute::intel::coord_t coordinate) {
+        __spirv_Subgroup2DBlockPrefetchINTEL(ElementSize, BlockWidth, BlockHeight, BlockCount,
+          srcBasePointer, memoryWidth, memoryHeight, memoryPitch, coordinate);
+    }
+};
+
+} // namespace cute::detail
 
 #endif
 
@@ -292,8 +317,15 @@ SYCL_DEVICE_OCL(void intel_sub_group_2d_block_prefetch_16b_16r16x1c(
 
 #if defined(CUTE_ARCH_COPY_XE_BUILTIN_ENABLED)
 namespace cute::detail {
+
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
 struct OpSubgroup2DBlockLoadINTEL {};
+
+template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
+struct OpSubgroup2DBlockLoadTransformINTEL {};
+
+template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
+struct OpSubgroup2DBlockPrefetchINTEL {};
 
 template<>
 struct OpSubgroup2DBlockLoadINTEL<2, 16, 32, 2> {
@@ -305,6 +337,28 @@ struct OpSubgroup2DBlockLoadINTEL<2, 16, 32, 2> {
            reinterpret_cast<long>(srcBasePointer), memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate);
     }
 };
+
+template<>
+struct OpSubgroup2DBlockLoadTransformINTEL<2, 16, 32, 2> {
+    template<typename T>
+    CUTE_HOST_DEVICE
+    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
+            cute::intel::coord_t coordinate, T* dstPointer) {
+        *reinterpret_cast<intel::uint32 *>(dstPointer) =  __builtin_IB_subgroup_block_read_flat_transform_u16_k32v2(
+           reinterpret_cast<long>(srcBasePointer), memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate);
+    }
+};
+
+template<>
+struct OpSubgroup2DBlockPrefetchINTEL<2, 16, 8, 2> {
+    CUTE_HOST_DEVICE
+    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
+        cute::intel::coord_t coordinate) {
+        __builtin_IB_subgroup_block_read_prefetch_u16_m8k16v2(reinterpret_cast<long>(srcBasePointer),
+            memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate, CacheControl::kL1C_L3C);
+    }
+};
+
 }
 #endif
 
@@ -581,10 +635,11 @@ struct XE_2D_U16x8x32_LD_N {
     CUTE_HOST_DEVICE static void copy(const void *baseoffset, int width,
                                       int height, int pitch,
                                       intel::coord_t coord) {
-#if defined(SYCL_INTEL_TARGET)
-      __builtin_IB_subgroup_block_read_prefetch_u16_m8k16v2(
-          (long)baseoffset, width - 1, height - 1, pitch - 1, coord,
-          CacheControl::kL1C_L3C);
+#if defined(CUTE_ARCH_COPY_XE_ENABLED)
+      detail::OpSubgroup2DBlockPrefetchINTEL<2, 16, 8, 2>{}(baseoffset, width, height, pitch, coord);
+      // __builtin_IB_subgroup_block_read_prefetch_u16_m8k16v2(
+      //     (long)baseoffset, width - 1, height - 1, pitch - 1, coord,
+      //     CacheControl::kL1C_L3C);
 #else
       CUTE_INVALID_CONTROL_PATH(
           "Trying to use block prefetch on non-PVC hardware");
@@ -764,11 +819,10 @@ struct XE_2D_U16x32x32_LD_V {
   CUTE_HOST_DEVICE static void copy(const void *baseoffset, int width,
                                     int height, int pitch, intel::coord_t coord,
                                     T *dst) {
-#if defined(SYCL_INTEL_TARGET)
+#if defined(CUTE_ARCH_COPY_XE_ENABLED)
     static_assert(sizeof(T) == 2, "Expected T to have size 2");
-    *reinterpret_cast<intel::uint32 *>(dst) =
-        __builtin_IB_subgroup_block_read_flat_transform_u16_k32v2(
-            (long)(baseoffset), width - 1, height - 1, pitch - 1, coord);
+    detail::OpSubgroup2DBlockLoadTransformINTEL<2, 16, 32, 2>{}(baseoffset,
+        width, height, pitch, coord, (void*)dst);
 #else
     CUTE_INVALID_CONTROL_PATH("Trying to use block loads on non-PVC hardware");
 #endif
