@@ -256,17 +256,17 @@ struct OpSubgroup2DBlockLoadTransposeINTEL {
   }
 };
 
-template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
-struct OpSubgroup2DBlockPrefetchINTEL {
-    CUTE_HOST_DEVICE
-    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
-            cute::intel::coord_t coordinate) {
-#ifdef __SYCL_DEVICE_ONLY__
-        __spirv_Subgroup2DBlockPrefetchINTEL(ElementSize, BlockWidth, BlockHeight, BlockCount,
-            srcBasePointer, memoryWidth, memoryHeight, memoryPitch, coordinate);
-#endif
-    }
-};
+// template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
+// struct OpSubgroup2DBlockPrefetchINTEL {
+//     CUTE_HOST_DEVICE
+//     void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
+//             cute::intel::coord_t coordinate) {
+// #ifdef __SYCL_DEVICE_ONLY__
+//         __spirv_Subgroup2DBlockPrefetchINTEL(ElementSize, BlockWidth, BlockHeight, BlockCount,
+//             srcBasePointer, memoryWidth, memoryHeight, memoryPitch, coordinate);
+// #endif
+//     }
+// };
 
 
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
@@ -284,9 +284,12 @@ struct OpSubgroup2DBlockStoreINTEL {
 } // namespace cute::detail end
 #endif
 
+namespace cute::detail {
+
+template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
+struct OpSubgroup2DBlockPrefetchINTEL {};
 
 #if defined(CUTE_ARCH_COPY_XE_BUILTIN_ENABLED)
-namespace cute::detail {
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
 struct OpSubgroup2DBlockLoadINTEL {};
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
@@ -294,10 +297,7 @@ struct OpSubgroup2DBlockLoadTransformINTEL {};
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
 struct OpSubgroup2DBlockLoadTransposeINTEL {};
 template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
-struct OpSubgroup2DBlockPrefetchINTEL {};
-template<int ElementSize, int BlockWidth, int BlockHeight, int BlockCount>
 struct OpSubgroup2DBlockStoreINTEL {};
-
 
 template<>
 struct OpSubgroup2DBlockLoadINTEL<4, 16, 1, 1> {
@@ -542,16 +542,6 @@ struct OpSubgroup2DBlockLoadTransposeINTEL<4, 8, 16, 1> {
 };
 
 template<>
-struct OpSubgroup2DBlockPrefetchINTEL<4, 8, 16, 1> {
-    CUTE_HOST_DEVICE
-    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
-            cute::intel::coord_t coordinate) {
-        intel_sub_group_2d_block_prefetch_32b_16r8x1c(
-            (__global void*)(srcBasePointer), memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate);
-    }
-};
-
-template<>
 struct OpSubgroup2DBlockStoreINTEL<4, 16, 1, 1> {
     template<typename T>
     CUTE_HOST_DEVICE
@@ -594,8 +584,19 @@ struct OpSubgroup2DBlockStoreINTEL<4, 16, 8, 1> {
            reinterpret_cast<long>(dstBasePointer), memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate, *(intel::uint8 *)(srcPointer));
     }
 };
-} // namespace cute::detail end
 #endif
+
+template<>
+struct OpSubgroup2DBlockPrefetchINTEL<4, 8, 16, 1> {
+    CUTE_HOST_DEVICE
+    void operator()(const void* srcBasePointer, int memoryWidth, int memoryHeight, int memoryPitch,
+            cute::intel::coord_t coordinate) {
+        intel_sub_group_2d_block_prefetch_32b_16r8x1c(
+            (__global void*)(srcBasePointer), memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate);
+    }
+};
+
+} // namespace cute::detail end
 
 namespace cute
 {

@@ -136,9 +136,9 @@ SYCL_DEVICE_OCL(void intel_sub_group_2d_block_prefetch_8b_32r16x1c(
     __global void* base_address, int width, int height, int pitch,
     cute::intel::coord_t coord));
 
-#if defined(CUTE_ARCH_COPY_XE_BUILTIN_ENABLED)
 namespace cute::detail
 {
+#if defined(CUTE_ARCH_COPY_XE_BUILTIN_ENABLED)
 template<>
 struct OpSubgroup2DBlockLoadINTEL<1, 32, 1, 1> {
     template<typename T>
@@ -358,6 +358,7 @@ struct OpSubgroup2DBlockStoreINTEL<1, 16, 8, 2> {
            reinterpret_cast<long>(dstBasePointer), memoryWidth - 1, memoryHeight - 1, memoryPitch - 1, coordinate, *(intel::uchar8 *)(srcPointer));
     }
 };
+#endif
 
 template<>
 struct OpSubgroup2DBlockPrefetchINTEL<1, 32, 1, 2> {
@@ -409,7 +410,6 @@ struct OpSubgroup2DBlockPrefetchINTEL<1, 16, 32, 1> {
     }
 };
 } // namespace cute::detail end
-#endif
 
 namespace cute
 {
