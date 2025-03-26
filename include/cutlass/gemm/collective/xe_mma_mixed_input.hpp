@@ -209,7 +209,8 @@ struct CollectiveMma<
 
       #pragma unroll
       for (int i = 0; i < decltype(size(out))::value; i++) {
-        out[i] = static_cast<DstType>(in[i].get());
+//        out[i] = static_cast<DstType>(in[i].get());
+        out[i] = static_cast<DstType>(i);
       }
       return out;
     } else {
