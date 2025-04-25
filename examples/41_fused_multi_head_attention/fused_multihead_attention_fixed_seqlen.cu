@@ -220,7 +220,7 @@ struct Options {
     randomize_problems();
 
   }
-
+  
   void randomize_problems() {
 
     int problem_count = head_number * batch_size;
@@ -438,17 +438,17 @@ private:
       int bits_output = cutlass::sizeof_bits<ElementP>::value;
 
       if (bits_input == 1) {
-        scope_max = 2;
-        scope_min = 0;
+        scope_max = Element(2);
+        scope_min = Element(0);
       } else if (bits_input <= 8) {
-        scope_max = 2;
-        scope_min = -2;
+        scope_max = Element(2);
+        scope_min = Element(-2);
       } else if (bits_output == 16) {
-        scope_max = 8;
-        scope_min = -8;
+        scope_max = Element(8);
+        scope_min = Element(-8);
       } else {
-        scope_max = 8;
-        scope_min = -8;
+        scope_max = Element(8);
+        scope_min = Element(-8);
       }
 
       cutlass::reference::device::BlockFillRandomUniform(
@@ -980,15 +980,27 @@ public:
       (void)cudaEventDestroy(event);
     }
 
-    std::cout << std::endl;
-    std::cout << "CUTLASS Attention:\n"
-      << "====================================================" << std::endl;
-    std::cout << "    " << " {seq length Q, seq length KV, head size, head size V, head number, batch size} = {" << options.seq_length \
-      << ", " << options.seq_length_kv << ", " << options.head_size << ", " << options.head_size_v << ", " << options.head_number\
-      << ", " << options.batch_size << "}." << std::endl;
-    std::cout << std::endl;
-    std::cout << "    " << "Runtime: " << result.runtime_ms << " ms" << std::endl;
-    std::cout << "    " << "GFLOPs: " << result.gflops << std::endl;
+    // std::cout << std::endl;
+    // std::cout << "CUTLASS Attention:\n"
+    //   << "====================================================" << std::endl;
+    // std::cout << "    " << " {seq length Q, seq length KV, head size, head size V, head number, batch size} = {" << options.seq_length \
+    //   << ", " << options.seq_length_kv << ", " << options.head_size << ", " << options.head_size_v << ", " << options.head_number\
+    //   << ", " << options.batch_size << "}." << std::endl;
+    // std::cout << std::endl;
+    // std::cout << "    " << "Runtime: " << result.runtime_ms << " ms" << std::endl;
+    // std::cout << "    " << "GFLOPs: " << result.gflops << std::endl;
+
+    double cute_time = result.runtime_ms / 1000.0;
+    double flops_qk = 2.0 * options.batch_size * options.head_number * options.seq_length * options.seq_length_kv * options.head_size;
+    double flops_pv = 2.0 * options.batch_size * options.head_number * options.seq_length * options.head_size_v * options.seq_length_kv;
+    double tflops = ((flops_qk + flops_pv) * 1e-12) / cute_time;
+    double gbps_qk = 2.0 * options.batch_size * options.head_number * (options.seq_length * options.head_size + options.seq_length_kv * options.head_size);
+    double gbps_pv = 2.0 * options.batch_size * options.head_number * (options.seq_length_kv * options.seq_length + options.seq_length * options.head_size_v);
+    double gbps = ((gbps_qk + gbps_pv)  * 1e-9) / (cute_time);
+    std::cout << "Batch: " << options.batch_size << "\tNumHeads_q: " << options.head_number  << "\tNumHeads_kv: " << options.head_number  << "\tSeq Length QO: " << options.seq_length
+              << "\tSeq Length KV: " << options.seq_length_kv << "\tHead Size QK: " << options.head_size << "\tHead Size VO: " << options.head_size_v
+              << "\tCausal Mask: " << (options.causal ? "true" : "false");
+    printf("\nPerformance:   %4.3f  GB/s,    %4.3f  TFlop/s,   %6.4f  ms\n\n", gbps, tflops, cute_time * 1000);
 
     return result;
   }
@@ -1003,7 +1015,7 @@ template <
 >
 int run_attention(Options& options) {
   using Attention = AttentionKernel<
-    cutlass::half_t,      // scalar_t
+    cutlass::bfloat16_t,      // scalar_t
     cutlass::arch::Sm80,  // ArchTag
     true,                 // Memory is aligned
     kQueriesPerBlock,

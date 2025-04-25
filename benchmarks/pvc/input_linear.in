@@ -203,3 +203,55 @@ PvcGemmBF16BF16FP32_RCR_Linear_MoE --bm_name=bf16_bf16_fp32 --l=256 --m=32 --k=2
 PvcGemmBF16BF16FP32_RCR_Linear_MoE --bm_name=bf16_bf16_fp32 --l=256 --m=64 --k=2048 --n=7168
 # PvcGemmBF16BF16FP32_RCR_Linear_MoE --bm_name=bf16_bf16_fp32 --l=256 --m=128 --k=7168 --n=4096
 PvcGemmBF16BF16FP32_RCR_Linear_MoE --bm_name=bf16_bf16_fp32 --l=256 --m=128 --k=2048 --n=7168
+
+
+
+
+
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=192 --head_size=192 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=96 --head_size=96 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=2048 --batch_size=1 --head_number=128 --num_heads_kv=128  --head_size_v=128 --head_size=192 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=2048 --batch_size=1 --head_number=32, --num_heads_kv=8  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=2048 --batch_size=1 --head_number=32, --num_heads_kv=8  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=2048 --batch_size=8 --head_number=96 --num_heads_kv=96  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=2048 --batch_size=8 --head_number=96 --num_heads_kv=96  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=16 --head_number=1 --num_heads_kv=1  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=16 --head_number=1 --num_heads_kv=1  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=32 --head_number=1 --num_heads_kv=1  --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=32 --head_number=1 --num_heads_kv=1  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192  --seq_length_kv=8192  --batch_size=16 --head_number=2 --num_heads_kv=2  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192  --seq_length_kv=8192  --batch_size=16 --head_number=2 --num_heads_kv=2  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192  --seq_length_kv=8192  --batch_size=32 --head_number=2 --num_heads_kv=2  --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192  --seq_length_kv=8192  --batch_size=32 --head_number=2 --num_heads_kv=2  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096  --seq_length_kv=4096  --batch_size=16 --head_number=4 --num_heads_kv=4  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096  --seq_length_kv=4096  --batch_size=16 --head_number=4 --num_heads_kv=4  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096  --seq_length_kv=4096  --batch_size=32 --head_number=4 --num_heads_kv=4  --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096  --seq_length_kv=4096  --batch_size=32 --head_number=4 --num_heads_kv=4  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=16 --head_number=8 --num_heads_kv=8  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=16 --head_number=8 --num_heads_kv=8  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=32 --head_number=8 --num_heads_kv=8  --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=32 --head_number=8 --num_heads_kv=8  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=16 --head_number=16 --num_heads_kv=16 --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=16 --head_number=16 --num_heads_kv=16 --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=32 --head_number=16 --num_heads_kv=16 --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=32 --head_number=16 --num_heads_kv=16 --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512   --seq_length_kv=512   --batch_size=32 --head_number=16 --num_heads_kv=16 --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512   --seq_length_kv=512   --batch_size=32 --head_number=16 --num_heads_kv=16 --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512   --seq_length_kv=512   --batch_size=32 --head_number=32 --num_heads_kv=32 --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512   --seq_length_kv=512   --batch_size=32 --head_number=32 --num_heads_kv=32 --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=4  --head_number=48 --num_heads_kv=48 --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=4  --head_number=48 --num_heads_kv=48 --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=32 --num_heads_kv=32  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=32 --num_heads_kv=32  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=96 --num_heads_kv=96  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=96 --num_heads_kv=96  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=16 --head_number=128 --num_heads_kv=128   --head_size_v=192 --head_size=192 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=16 --head_number=128 --num_heads_kv=128   --head_size_v=192 --head_size=192 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=8 --head_number=32 --num_heads_kv=32   --head_size_v=96 --head_size=96 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=8 --head_number=32 --num_heads_kv=32   --head_size_v=96 --head_size=96 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=1 --num_heads_kv=1   --head_size_v=96 --head_size=96 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=1 --num_heads_kv=1   --head_size_v=96 --head_size=96 --causal=true
