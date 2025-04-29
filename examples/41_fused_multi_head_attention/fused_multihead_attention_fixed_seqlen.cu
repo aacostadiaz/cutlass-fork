@@ -990,12 +990,18 @@ public:
     // std::cout << "    " << "Runtime: " << result.runtime_ms << " ms" << std::endl;
     // std::cout << "    " << "GFLOPs: " << result.gflops << std::endl;
 
-    double cute_time = result.runtime_ms / 1000.0;
-    double flops_qk = 2.0 * options.batch_size * options.head_number * options.seq_length * options.seq_length_kv * options.head_size;
-    double flops_pv = 2.0 * options.batch_size * options.head_number * options.seq_length * options.head_size_v * options.seq_length_kv;
+    double cute_time = (result.runtime_ms / 1000.0);
+    auto offset = cute::min(options.seq_length, options.seq_length_kv);
+    auto discard_seq_coord = options.seq_length - offset;
+    auto full_tile_offset = options.seq_length_kv - offset;
+    // offset + 1 is going to be ceil_div
+    auto effective_seq_len_kv = options.causal ? full_tile_offset + ((offset + 1) / 2.0): options.seq_length_kv;
+    auto effective_seq_len_qo = options.causal ? options.seq_length - discard_seq_coord : options.seq_length;
+    double flops_qk = sizeof(ElementQ) * options.batch_size * options.head_number * effective_seq_len_qo * effective_seq_len_kv * options.head_size;
+    double flops_pv = sizeof(ElementQ) * options.batch_size * options.head_number * effective_seq_len_qo * options.head_size_v * effective_seq_len_kv;
     double tflops = ((flops_qk + flops_pv) * 1e-12) / cute_time;
-    double gbps_qk = 2.0 * options.batch_size * options.head_number * (options.seq_length * options.head_size + options.seq_length_kv * options.head_size);
-    double gbps_pv = 2.0 * options.batch_size * options.head_number * (options.seq_length_kv * options.seq_length + options.seq_length * options.head_size_v);
+    double gbps_qk = sizeof (ElementQ) * options.batch_size * options.head_number * (effective_seq_len_qo * options.head_size + effective_seq_len_kv * options.head_size);
+    double gbps_pv = sizeof (ElementQ) * options.batch_size * options.head_number * (effective_seq_len_kv * options.head_size_v) + sizeof (ElementO) * options.batch_size * options.head_number * effective_seq_len_qo * options.head_size_v;
     double gbps = ((gbps_qk + gbps_pv)  * 1e-9) / (cute_time);
     std::cout << "Batch: " << options.batch_size << "\tNumHeads_q: " << options.head_number  << "\tNumHeads_kv: " << options.head_number  << "\tSeq Length QO: " << options.seq_length
               << "\tSeq Length KV: " << options.seq_length_kv << "\tHead Size QK: " << options.head_size << "\tHead Size VO: " << options.head_size_v
