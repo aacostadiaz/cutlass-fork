@@ -209,10 +209,47 @@ PvcGemmBF16BF16FP32_RCR_Linear_MoE --bm_name=bf16_bf16_fp32 --l=256 --m=128 --k=
 
 
 
-./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=128 --head_size=128 --causal=false
-./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=128 --head_size=128 --causal=true
-./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
-./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=192 --head_size=192 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=1 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=1 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=16384 --seq_length_kv=16384 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192 --seq_length_kv=8192 --batch_size=2 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192 --seq_length_kv=8192 --batch_size=2 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192 --seq_length_kv=8192 --batch_size=2 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=8192 --seq_length_kv=8192 --batch_size=2 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096 --seq_length_kv=4096 --batch_size=4 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096 --seq_length_kv=4096 --batch_size=4 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096 --seq_length_kv=4096 --batch_size=4 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=4096 --seq_length_kv=4096 --batch_size=4 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=2048 --batch_size=8 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=2048 --batch_size=8 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=2048 --batch_size=8 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=2048 --batch_size=8 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=1024 --batch_size=16 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=1024 --batch_size=16 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=1024 --batch_size=16 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=1024 --batch_size=16 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512 --seq_length_kv=512 --batch_size=32 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512 --seq_length_kv=512 --batch_size=32 --head_number=16, --num_heads_kv=16  --head_size_v=128 --head_size=128 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512 --seq_length_kv=512 --batch_size=32 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=512 --seq_length_kv=512 --batch_size=32 --head_number=32, --num_heads_kv=32  --head_size_v=64 --head_size=64 --causal=true
+
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=1024 --batch_size=4 --head_number=48, --num_heads_kv=48  --head_size_v=64 --head_size=64 --causal=false
+./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=1024 --batch_size=4 --head_number=48, --num_heads_kv=48  --head_size_v=64 --head_size=64 --causal=true
+
+
+
+
+
+
+
+
+
 ./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048 --seq_length_kv=1024 --batch_size=1 --head_number=32, --num_heads_kv=32  --head_size_v=96 --head_size=96 --causal=true
 ./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=2048 --batch_size=1 --head_number=128 --num_heads_kv=128  --head_size_v=128 --head_size=192 --causal=false
 ./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024 --seq_length_kv=2048 --batch_size=1 --head_number=32, --num_heads_kv=8  --head_size_v=128 --head_size=128 --causal=false
@@ -255,3 +292,64 @@ PvcGemmBF16BF16FP32_RCR_Linear_MoE --bm_name=bf16_bf16_fp32 --l=256 --m=128 --k=
 ./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=1024  --seq_length_kv=1024  --batch_size=8 --head_number=32 --num_heads_kv=32   --head_size_v=96 --head_size=96 --causal=true
 ./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=1 --num_heads_kv=1   --head_size_v=96 --head_size=96 --causal=false
 ./examples/41_fused_multi_head_attention/41_fused_multi_head_attention_fixed_seqlen --seq_length=2048  --seq_length_kv=2048  --batch_size=8 --head_number=1 --num_heads_kv=1   --head_size_v=96 --head_size=96 --causal=true
+
+
+
+
+
+
+rm -rf *
+rm -rf .n*
+
+module purge
+module load cmake ninja compiler/2025.1.0 # dpcpp-nightly dpcpp/nightly/latest #gfx-driver/32224 #gfx-driver/devigc_ci/33276 #gfx-driver/32567 #gfx-driver/32224 #gfx-driver/32224
+export CC=icx
+export CXX=icpx
+echo $LD_LIBRARY_PATH
+echo $PATH
+echo $LD_LIBRARY_PATH
+export IGC_ShaderDumpEnable=1
+export SYCL_PROGRAM_COMPILE_OPTIONS="-ze-opt-large-register-file -gline-tables-only"
+sycl-ls
+which ocloc
+export ONEAPI_DEVICE_SELECTOR=level_zero:gpu
+export IGC_VISAOptions="-perfmodel"
+export IGC_VectorAliasBBThreshold=1000
+export IGC_ExtraOCLOptions="-cl-intel-256-GRF-per-thread"
+cmake .. -GNinja -DCUTLASS_ENABLE_SYCL=ON -DCUTLASS_SYCL_PROFILING_ENABLED=OFF -DDPCPP_SYCL_TARGET=intel_gpu_bmg_g21 -DCUTLASS_ENABLE_BENCHMARKS=ON -DCMAKE_BUILD_TYPE=Release
+
+
+
+IGC_DumpToCustomDir=dump_pvc_flash_attention ninja -v 06_bmg_prefill_attention
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=16384 --seq_len_kv=16384 --batch=1 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128  --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=16384 --seq_len_kv=16384 --batch=1 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --is_causal --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=16384 --seq_len_kv=16384 --batch=1 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=16384 --seq_len_kv=16384 --batch=1 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
+
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=8192  --seq_len_kv=8192  --batch=2 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=8192  --seq_len_kv=8192  --batch=2 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --is_causal --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=8192  --seq_len_kv=8192  --batch=2 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=8192  --seq_len_kv=8192  --batch=2 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
+
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=4096  --seq_len_kv=4096  --batch=4 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=4096  --seq_len_kv=4096  --batch=4 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --is_causal --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=4096  --seq_len_kv=4096  --batch=4 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=4096  --seq_len_kv=4096  --batch=4 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
+
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=2048  --seq_len_kv=2048  --batch=8 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=2048  --seq_len_kv=2048  --batch=8 --num_heads_q=16 --num_heads_kv=16  --head_size_vo=128 --head_size_qk=128 --is_causal --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=2048  --seq_len_kv=2048  --batch=8 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=2048  --seq_len_kv=2048  --batch=8 --num_heads_q=32 --num_heads_kv=32  --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
+
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=1024  --seq_len_kv=1024  --batch=16 --num_heads_q=16 --num_heads_kv=16 --head_size_vo=128 --head_size_qk=128 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=1024  --seq_len_kv=1024  --batch=16 --num_heads_q=16 --num_heads_kv=16 --head_size_vo=128 --head_size_qk=128 --is_causal --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=1024  --seq_len_kv=1024  --batch=16 --num_heads_q=32 --num_heads_kv=32 --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=1024  --seq_len_kv=1024  --batch=16 --num_heads_q=32 --num_heads_kv=32 --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
+
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=512   --seq_len_kv=512   --batch=32 --num_heads_q=16 --num_heads_kv=16 --head_size_vo=128 --head_size_qk=128 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=512   --seq_len_kv=512   --batch=32 --num_heads_q=16 --num_heads_kv=16 --head_size_vo=128 --head_size_qk=128 --is_causal --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=512   --seq_len_kv=512   --batch=32 --num_heads_q=32 --num_heads_kv=32 --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=512   --seq_len_kv=512   --batch=32 --num_heads_q=32 --num_heads_kv=32 --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
+
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=1024  --seq_len_kv=1024  --batch=4  --num_heads_q=48 --num_heads_kv=48 --head_size_vo=64 --head_size_qk=64 --scheduler=Individual
+./examples/sycl/06_bmg_flash_attention/06_bmg_prefill_attention --seq_len_qo=1024  --seq_len_kv=1024  --batch=4  --num_heads_q=48 --num_heads_kv=48 --head_size_vo=64 --head_size_qk=64 --is_causal --scheduler=Individual
