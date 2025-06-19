@@ -173,14 +173,14 @@ bool initialize_block(
   int bits_input = cutlass::sizeof_bits<Element>::value;
 
   if (bits_input == 1) {
-    scope_max = 2;
-    scope_min = 0;
+    scope_max = Element(2);
+    scope_min = Element(0);
   } else if (bits_input <= 8) {
-    scope_max = 2;
-    scope_min = -2;
+    scope_max = Element(2);
+    scope_min = Element(-2);
   } else {
-    scope_max = 8;
-    scope_min = -8;
+    scope_max = Element(8);
+    scope_min = Element(-8);
   }
 
   cutlass::reference::device::BlockFillRandomUniform(
@@ -353,10 +353,16 @@ struct ExampleRunner {
       result.avg_runtime_ms = double(elapsed_ms) / double(options.iterations);
       result.gflops = options.gflops(result.avg_runtime_ms / 1000.0);
 
-      std::cout << "  Problem Size: " << options.m << 'x' << options.n << 'x'
-                << options.k << 'x' << options.l << std::endl;
-      std::cout << "  Avg runtime: " << result.avg_runtime_ms << " ms" << std::endl;
-      std::cout << "  GFLOPS: " << result.gflops << std::endl;
+      float cute_time = result.avg_runtime_ms / 1000.0;
+      double tflops = (2.0 * options.m * options.n * options.k * options.l) * 1e-12;
+      auto mega_bytes_transferred = static_cast<double>(
+        options.m * options.k * sizeof(ElementA) +
+        options.k * options.n * sizeof(ElementB) +
+        (options.beta != 0 ? 2 : 1) * options.m * options.n * sizeof(ElementC)
+      ) * 1e-6 * options.l;
+
+      std::cout << "Problem Size: " << options.m << 'x' << options.n << 'x' << options.k << 'x' << options.l << std::endl;
+      printf("Performance:   %4.3f  GB/s,   [%4.3f]TFlop/s  (%6.4f)ms\n", mega_bytes_transferred/(cute_time*1000) , tflops / cute_time, cute_time*1000);
     }
   }
 };
@@ -447,7 +453,7 @@ int main(int argc, char const **args) {
 
   // Define the copy layout and atom for device memory copy.
   using GmemTiledCopyA = decltype(
-    make_tiled_copy(Copy_Atom<UniversalCopy<uint16_t>, bfloat16_t>{},
+    make_tiled_copy(Copy_Atom<SM80_CP_ASYNC_CACHEGLOBAL<uint128_t>, bfloat16_t>{},
                     Layout<Shape<_32, _4>,
                       Stride<_4, _1> >{},
                     Layout<Shape<_1, _8> >{}));

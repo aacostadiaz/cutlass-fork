@@ -65,3 +65,34 @@ AmpereGemmTF32TF32FP32_CCC --bm_name=tf32_tf32_fp32 --l=1 --m=3072 --k=4096 --n=
 AmpereGemmTF32TF32FP32_CCC --bm_name=tf32_tf32_fp32 --l=1 --m=4 --k=4096 --n=12288
 AmpereGemmTF32TF32FP32_CCC --bm_name=tf32_tf32_fp32 --l=1 --m=4 --k=14336 --n=5376
 AmpereGemmTF32TF32FP32_CCC --bm_name=tf32_tf32_fp32 --l=1 --m=4 --k=8192 --n=2048
+
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=1024
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=1024
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=1024
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=1024
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=14336 --n=4096
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=14336 --n=4096
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=6144
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=4096
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=4096
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=6144
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=4096
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=4096
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=14336
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=14336
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=14336
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=14336
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=28672
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m1 --m=1 --k=4096 --n=28672
+
+./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm_cute_m8 --m=8 --k=4096 --n=128256

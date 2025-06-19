@@ -348,7 +348,7 @@ public:
         uint32_t thread_succeed = ballot_sync(0xffffffff, linear_idx < group_info.start_linear_idx + group_info.total_tiles);
         if (thread_succeed) {
           // Use the first succeeding thread.
-          int first_succeeding_thread = ffs(thread_succeed) - 1;
+          int first_succeeding_thread = __ffs(thread_succeed) - 1;
           group_info.group_idx = shfl_sync(0xffffffff, group_info.group_idx, first_succeeding_thread);
           group_info.start_linear_idx = shfl_sync(0xffffffff, group_info.start_linear_idx, first_succeeding_thread);
           group_info.total_tiles = shfl_sync(0xffffffff, group_info.total_tiles, first_succeeding_thread);
